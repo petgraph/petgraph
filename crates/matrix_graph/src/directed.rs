@@ -1,8 +1,12 @@
 use core::{cmp, marker::PhantomData};
 
+use fixedbitset::FixedBitSet;
 use petgraph_core::{
     edge::{EdgeMut, EdgeRef},
-    graph::{Cardinality, DensityHint, DirectedGraph, Graph},
+    graph::{
+        Cardinality, DensityHint, DirectedGraph, Graph,
+        storable::{DataContainer, StorableGraph, VisitContainer, containers::DefaultVec},
+    },
     id::Id,
     node::{NodeMut, NodeRef},
 };
@@ -915,6 +919,113 @@ fn neighbor_iter_mut<'a, Null: NicheWrapper + 'a>(
         });
 
     Either::Right(incoming_before.chain(outgoing).chain(incoming_after))
+}
+
+pub struct MatrixGraphVisitMap<EdgeId> {
+    visit_map: FixedBitSet,
+    node_capacity: usize,
+    phantom: PhantomData<EdgeId>,
+}
+
+impl VisitContainer<DiMatrixEdgeId> for MatrixGraphVisitMap<DiMatrixEdgeId> {
+    fn mark_visited(&mut self, node_id: DiMatrixEdgeId) {
+        let index =
+            to_flat_square_matrix_position(node_id.source.0, node_id.target.0, self.node_capacity);
+        self.visit_map.set(index, true);
+    }
+
+    fn mark_unvisited(&mut self, node_id: DiMatrixEdgeId) {
+        let index =
+            to_flat_square_matrix_position(node_id.source.0, node_id.target.0, self.node_capacity);
+        self.visit_map.set(index, false);
+    }
+
+    fn is_visited(&self, node_id: DiMatrixEdgeId) -> bool {
+        let index =
+            to_flat_square_matrix_position(node_id.source.0, node_id.target.0, self.node_capacity);
+        self.visit_map.contains(index) && self.visit_map[index]
+    }
+
+    fn clear(&mut self) {
+        self.visit_map.clear();
+    }
+}
+
+pub struct MatrixGraphEdgeDataContainer<EdgeId, Data> {
+    data: Vec<Data>,
+    node_capacity: usize,
+    default_value: Data,
+    phantom: PhantomData<EdgeId>,
+}
+
+impl<Data: Clone> DataContainer<DiMatrixEdgeId, Data>
+    for MatrixGraphEdgeDataContainer<DiMatrixEdgeId, Data>
+{
+    fn get(&self, node_id: DiMatrixEdgeId) -> &Data {
+        let index =
+            to_flat_square_matrix_position(node_id.source.0, node_id.target.0, self.node_capacity);
+        &self.data[index]
+    }
+
+    fn get_mut(&mut self, node_id: DiMatrixEdgeId) -> &mut Data {
+        let index =
+            to_flat_square_matrix_position(node_id.source.0, node_id.target.0, self.node_capacity);
+        &mut self.data[index]
+    }
+
+    fn insert(&mut self, node_id: DiMatrixEdgeId, data: Data) {
+        let index =
+            to_flat_square_matrix_position(node_id.source.0, node_id.target.0, self.node_capacity);
+        self.data[index] = data;
+    }
+
+    fn remove(&mut self, node_id: DiMatrixEdgeId) {
+        let index =
+            to_flat_square_matrix_position(node_id.source.0, node_id.target.0, self.node_capacity);
+        self.data[index] = self.default_value.clone();
+    }
+
+    fn clear(&mut self) {
+        self.data.fill(self.default_value.clone());
+    }
+}
+
+impl<N, E, Null: NicheWrapper<Wrapped = E>> StorableGraph for MatrixGraph<N, E, Directed, Null> {
+    type EdgeDataContainer<Data: Clone> = MatrixGraphEdgeDataContainer<DiMatrixEdgeId, Data>;
+    type EdgeVisitContainer = MatrixGraphVisitMap<DiMatrixEdgeId>;
+    type NodeDataContainer<Data: Clone> = DefaultVec<Data>;
+    type NodeVisitContainer = FixedBitSet;
+
+    fn node_visit_container(&self) -> Self::NodeVisitContainer {
+        FixedBitSet::with_capacity(self.node_data.capacity())
+    }
+
+    fn node_data_container<Data: Clone>(
+        &self,
+        default_value: Data,
+    ) -> Self::NodeDataContainer<Data> {
+        DefaultVec::new_with_capacity(default_value, self.node_data.capacity())
+    }
+
+    fn edge_visit_container(&self) -> Self::EdgeVisitContainer {
+        MatrixGraphVisitMap {
+            visit_map: FixedBitSet::with_capacity(self.flattened_edge_data.len()),
+            node_capacity: self.node_capacity,
+            phantom: PhantomData,
+        }
+    }
+
+    fn edge_data_container<Data: Clone>(
+        &self,
+        default_value: Data,
+    ) -> Self::EdgeDataContainer<Data> {
+        MatrixGraphEdgeDataContainer {
+            data: vec![default_value.clone(); self.flattened_edge_data.len()],
+            node_capacity: self.node_capacity,
+            default_value,
+            phantom: PhantomData,
+        }
+    }
 }
 
 #[cfg(test)]
