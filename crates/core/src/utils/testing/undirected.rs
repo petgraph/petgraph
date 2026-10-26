@@ -61,151 +61,156 @@ fn create_undirected_test_graph<G: EditableGraph<OwnedNodeData = (), OwnedEdgeDa
 #[macro_export]
 macro_rules! test_undirected_graph {
     ($graph_constructor:expr,) => {
-        #[test]
-        fn test_density_hint() {
-            $crate::utils::testing::undirected::__private_testing::test_density_hint_inner(
-                $graph_constructor,
-            );
-        }
+        mod undirected_graph_test_macro {
+            #[allow(unused_imports)]
+            use super::*;
 
-        #[test]
-        fn test_cardinality() {
-            $crate::utils::testing::undirected::__private_testing::test_cardinality_inner(
-                $graph_constructor,
-            );
-        }
+            #[test]
+            fn test_density_hint() {
+                $crate::utils::testing::undirected::__private_testing::test_density_hint_inner(
+                    $graph_constructor,
+                );
+            }
 
-        #[test]
-        fn test_nodes() {
-            $crate::utils::testing::undirected::__private_testing::test_nodes_inner(
-                $graph_constructor,
-            );
-        }
+            #[test]
+            fn test_cardinality() {
+                $crate::utils::testing::undirected::__private_testing::test_cardinality_inner(
+                    $graph_constructor,
+                );
+            }
 
-        #[test]
-        fn test_nodes_mut() {
-            $crate::utils::testing::undirected::__private_testing::test_nodes_mut_inner(
-                $graph_constructor,
-            );
-        }
+            #[test]
+            fn test_nodes() {
+                $crate::utils::testing::undirected::__private_testing::test_nodes_inner(
+                    $graph_constructor,
+                );
+            }
 
-        #[test]
-        fn test_isolated_nodes() {
-            $crate::utils::testing::undirected::__private_testing::test_isolated_nodes_inner(
-                $graph_constructor,
-            );
-        }
+            #[test]
+            fn test_nodes_mut() {
+                $crate::utils::testing::undirected::__private_testing::test_nodes_mut_inner(
+                    $graph_constructor,
+                );
+            }
 
-        #[test]
-        fn test_edges() {
-            $crate::utils::testing::undirected::__private_testing::test_edges_inner(
-                $graph_constructor,
-            );
-        }
+            #[test]
+            fn test_isolated_nodes() {
+                $crate::utils::testing::undirected::__private_testing::test_isolated_nodes_inner(
+                    $graph_constructor,
+                );
+            }
 
-        #[test]
-        fn test_edges_mut() {
-            $crate::utils::testing::undirected::__private_testing::test_edges_mut_inner(
-                $graph_constructor,
-            );
-        }
+            #[test]
+            fn test_edges() {
+                $crate::utils::testing::undirected::__private_testing::test_edges_inner(
+                    $graph_constructor,
+                );
+            }
 
-        #[test]
-        fn test_node() {
-            $crate::utils::testing::undirected::__private_testing::test_node_inner(
-                $graph_constructor,
-            );
-        }
+            #[test]
+            fn test_edges_mut() {
+                $crate::utils::testing::undirected::__private_testing::test_edges_mut_inner(
+                    $graph_constructor,
+                );
+            }
 
-        #[test]
-        fn test_node_mut() {
-            $crate::utils::testing::undirected::__private_testing::test_node_mut_inner(
-                $graph_constructor,
-            );
-        }
+            #[test]
+            fn test_node() {
+                $crate::utils::testing::undirected::__private_testing::test_node_inner(
+                    $graph_constructor,
+                );
+            }
 
-        #[test]
-        fn test_edge() {
-            $crate::utils::testing::undirected::__private_testing::test_edge_inner(
-                $graph_constructor,
-            );
-        }
+            #[test]
+            fn test_node_mut() {
+                $crate::utils::testing::undirected::__private_testing::test_node_mut_inner(
+                    $graph_constructor,
+                );
+            }
 
-        #[test]
-        fn test_edge_mut() {
-            $crate::utils::testing::undirected::__private_testing::test_edge_mut_inner(
-                $graph_constructor,
-            );
-        }
+            #[test]
+            fn test_edge() {
+                $crate::utils::testing::undirected::__private_testing::test_edge_inner(
+                    $graph_constructor,
+                );
+            }
 
-        #[test]
-        fn test_degree() {
-            $crate::utils::testing::undirected::__private_testing::test_degree_inner(
-                $graph_constructor,
-            );
-        }
+            #[test]
+            fn test_edge_mut() {
+                $crate::utils::testing::undirected::__private_testing::test_edge_mut_inner(
+                    $graph_constructor,
+                );
+            }
 
-        #[test]
-        fn test_incident_edges() {
-            $crate::utils::testing::undirected::__private_testing::test_incident_edges_inner(
-                $graph_constructor,
-            );
-        }
+            #[test]
+            fn test_degree() {
+                $crate::utils::testing::undirected::__private_testing::test_degree_inner(
+                    $graph_constructor,
+                );
+            }
 
-        #[test]
-        fn test_incident_edges_mut() {
-            $crate::utils::testing::undirected::__private_testing::test_incident_edges_mut_inner(
-                $graph_constructor,
-            );
-        }
+            #[test]
+            fn test_incident_edges() {
+                $crate::utils::testing::undirected::__private_testing::test_incident_edges_inner(
+                    $graph_constructor,
+                );
+            }
 
-        #[test]
-        fn test_adjacencies() {
-            $crate::utils::testing::undirected::__private_testing::test_adjacencies_inner(
-                $graph_constructor,
-            );
-        }
+            #[test]
+            fn test_incident_edges_mut() {
+                $crate::utils::testing::undirected::__private_testing::test_incident_edges_mut_inner(
+                    $graph_constructor,
+                );
+            }
 
-        #[test]
-        fn test_edges_connecting() {
-            $crate::utils::testing::undirected::__private_testing::test_edges_connecting_inner(
-                $graph_constructor,
-            );
-        }
+            #[test]
+            fn test_adjacencies() {
+                $crate::utils::testing::undirected::__private_testing::test_adjacencies_inner(
+                    $graph_constructor,
+                );
+            }
 
-        #[test]
-        fn test_edges_connecting_mut() {
-            $crate::utils::testing::undirected::__private_testing::test_edges_connecting_mut_inner(
-                $graph_constructor,
-            );
-        }
+            #[test]
+            fn test_edges_connecting() {
+                $crate::utils::testing::undirected::__private_testing::test_edges_connecting_inner(
+                    $graph_constructor,
+                );
+            }
 
-        #[test]
-        fn test_contains_node() {
-            $crate::utils::testing::undirected::__private_testing::test_contains_node_inner(
-                $graph_constructor,
-            );
-        }
+            #[test]
+            fn test_edges_connecting_mut() {
+                $crate::utils::testing::undirected::__private_testing::test_edges_connecting_mut_inner(
+                    $graph_constructor,
+                );
+            }
 
-        #[test]
-        fn test_contains_edge() {
-            $crate::utils::testing::undirected::__private_testing::test_contains_edge_inner(
-                $graph_constructor,
-            );
-        }
+            #[test]
+            fn test_contains_node() {
+                $crate::utils::testing::undirected::__private_testing::test_contains_node_inner(
+                    $graph_constructor,
+                );
+            }
 
-        #[test]
-        fn test_is_adjacent() {
-            $crate::utils::testing::undirected::__private_testing::test_is_adjacent_inner(
-                $graph_constructor,
-            );
-        }
+            #[test]
+            fn test_contains_edge() {
+                $crate::utils::testing::undirected::__private_testing::test_contains_edge_inner(
+                    $graph_constructor,
+                );
+            }
 
-        #[test]
-        fn test_is_empty() {
-            $crate::utils::testing::undirected::__private_testing::test_is_empty_inner(
-                $graph_constructor,
-            );
+            #[test]
+            fn test_is_adjacent() {
+                $crate::utils::testing::undirected::__private_testing::test_is_adjacent_inner(
+                    $graph_constructor,
+                );
+            }
+
+            #[test]
+            fn test_is_empty() {
+                $crate::utils::testing::undirected::__private_testing::test_is_empty_inner(
+                    $graph_constructor,
+                );
+            }
         }
     };
 }

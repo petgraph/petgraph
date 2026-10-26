@@ -1,4 +1,5 @@
 pub mod directed;
+pub mod editable;
 pub mod undirected;
 
 /// Helper function to check if the edges returned by an iterator match the expected edges.
