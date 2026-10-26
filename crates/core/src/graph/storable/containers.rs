@@ -1,16 +1,44 @@
-use alloc::{collections::VecDeque, vec::Vec};
+use alloc::{collections::VecDeque, vec, vec::Vec};
 #[cfg(feature = "std")]
 use std::collections::{HashMap as StdHashMap, HashSet as StdHashSet};
 
+use fixedbitset::FixedBitSet;
 #[cfg(feature = "hashbrown")]
 use hashbrown::{HashMap as HashbrownHashMap, HashSet as HashbrownHashSet};
 
 use super::{DataContainer, QueueContainer, StackContainer, VisitContainer};
 use crate::id::IndexId;
 
+impl<Id: IndexId> VisitContainer<Id> for FixedBitSet {
+    fn mark_visited(&mut self, node_id: Id) {
+        self.set(node_id.as_usize(), true);
+    }
+
+    fn mark_unvisited(&mut self, node_id: Id) {
+        self.set(node_id.as_usize(), false);
+    }
+
+    fn is_visited(&self, node_id: Id) -> bool {
+        self.contains(node_id.as_usize())
+    }
+
+    fn clear(&mut self) {
+        self.clear();
+    }
+}
+
 pub struct DefaultVec<Data> {
     vec: Vec<Data>,
     default: Data,
+}
+
+impl<Data: Clone> DefaultVec<Data> {
+    pub fn new_with_capacity(default: Data, capacity: usize) -> Self {
+        Self {
+            vec: vec![default.clone(); capacity],
+            default,
+        }
+    }
 }
 
 impl<Id: IndexId, Data: Clone> DataContainer<Id, Data> for DefaultVec<Data> {

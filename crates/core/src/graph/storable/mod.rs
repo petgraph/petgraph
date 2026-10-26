@@ -6,23 +6,23 @@ use crate::graph::Graph;
 pub mod containers;
 
 /// A container for storing data associated with nodes or edges in a graph.
-pub trait DataContainer<Id, Data> {
+pub trait DataContainer<Id, Data: Clone> {
     /// Returns a reference to the data associated with the given id.
     ///
     /// May return a reference to a default value if no data is associated with the id.
-    fn get(&self, node_id: Id) -> &Data;
+    fn get(&self, id: Id) -> &Data;
 
     /// Returns a mutable reference to the data associated with the given id.
     ///
     /// May return a mutable reference to a default value if no data is associated with the id.
-    fn get_mut(&mut self, node_id: Id) -> &mut Data;
+    fn get_mut(&mut self, id: Id) -> &mut Data;
 
     /// Inserts data associated with the given id. If data already exists for the id, it will be
     /// replaced.
-    fn insert(&mut self, node_id: Id, data: Data);
+    fn insert(&mut self, id: Id, data: Data);
 
     /// Removes the data associated with the given id.
-    fn remove(&mut self, node_id: Id);
+    fn remove(&mut self, id: Id);
 
     /// Clears all data in the container, resetting it to its default state.
     fn clear(&mut self);
@@ -42,13 +42,13 @@ pub trait DataContainer<Id, Data> {
 /// A container for tracking visited nodes or edges in a graph.
 pub trait VisitContainer<Id> {
     /// Marks the given id as visited.
-    fn mark_visited(&mut self, node_id: Id);
+    fn mark_visited(&mut self, id: Id);
 
     /// Marks the given id as unvisited.
-    fn mark_unvisited(&mut self, node_id: Id);
+    fn mark_unvisited(&mut self, id: Id);
 
     /// Returns whether the given id is marked as visited.
-    fn is_visited(&self, node_id: Id) -> bool;
+    fn is_visited(&self, id: Id) -> bool;
 
     /// Clears all visited marks in the container, resetting it to the unvisited state.
     fn clear(&mut self);
