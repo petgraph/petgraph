@@ -15,7 +15,7 @@ use core::{
 
 use petgraph_core::{
     graph::{Directed, EditableGraph, Graph, Undirected},
-    id::Id,
+    id::{Id, IndexId},
 };
 use slab::Slab;
 
@@ -45,9 +45,42 @@ impl From<usize> for MatrixGraphNodeId {
     }
 }
 
+impl From<u16> for MatrixGraphNodeId {
+    fn from(value: u16) -> Self {
+        Self(value as usize)
+    }
+}
+
 impl From<u32> for MatrixGraphNodeId {
     fn from(value: u32) -> Self {
         Self(value as usize)
+    }
+}
+
+impl From<u64> for MatrixGraphNodeId {
+    fn from(value: u64) -> Self {
+        Self(value as usize)
+    }
+}
+
+impl IndexId for MatrixGraphNodeId {
+    const MAX: Self = Self(usize::MAX);
+    const MIN: Self = Self(0);
+
+    fn as_u16(self) -> u16 {
+        self.0 as u16
+    }
+
+    fn as_u32(self) -> u32 {
+        self.0 as u32
+    }
+
+    fn as_u64(self) -> u64 {
+        self.0 as u64
+    }
+
+    fn as_usize(self) -> usize {
+        self.0
     }
 }
 
