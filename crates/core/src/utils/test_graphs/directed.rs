@@ -294,34 +294,5 @@ mod test {
     use super::*;
     use crate::test_directed_graph;
 
-    fn remove_node_with_unwrap(
-        graph: &mut DirectedTestGraph<(), (), DirNodeId, DirEdgeId>,
-        node_id: DirNodeId,
-    ) {
-        graph.remove_node(node_id).unwrap();
-    }
-
-    fn add_edge_with_unwrap(
-        graph: &mut DirectedTestGraph<(), (), DirNodeId, DirEdgeId>,
-        source: DirNodeId,
-        target: DirNodeId,
-        _data: (),
-    ) -> DirEdgeId {
-        graph.add_edge(source, target, ()).unwrap()
-    }
-
-    fn remove_edge_with_unwrap(
-        graph: &mut DirectedTestGraph<(), (), DirNodeId, DirEdgeId>,
-        edge_id: DirEdgeId,
-    ) {
-        graph.remove_edge(edge_id).unwrap();
-    }
-
-    test_directed_graph!(
-        DirectedTestGraph::<(), (), DirNodeId, DirEdgeId>::new,
-        DirectedTestGraph::<(), (), DirNodeId, DirEdgeId>::add_node,
-        remove_node_with_unwrap,
-        add_edge_with_unwrap,
-        remove_edge_with_unwrap
-    );
+    test_directed_graph!(DirectedTestGraph::<(), (), DirNodeId, DirEdgeId>::new,);
 }
