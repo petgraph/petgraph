@@ -1071,6 +1071,18 @@ quickcheck! {
             if i >= 10 { break; } // testing all is too slow
             if let Some(path) = find_negative_cycle(&gr, start) {
                 assert!(!path.is_empty());
+                // The path must close into a cycle whose lightest edges sum negative.
+                let mut weight = 0.0;
+                for (k, &a) in path.iter().enumerate() {
+                    let b = path[(k + 1) % path.len()];
+                    let w = gr
+                        .edges_connecting(a, b)
+                        .map(|e| *e.weight())
+                        .fold(f32::INFINITY, f32::min);
+                    assert!(w.is_finite(), "{:?} -> {:?} is not an edge of {:?}", a, b, path);
+                    weight += w;
+                }
+                assert!(weight < 0.0, "{:?} is not a negative cycle", path);
             }
         }
         true

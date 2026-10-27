@@ -176,7 +176,7 @@ where
     let mut path = Vec::<G::NodeId>::new();
 
     // Step 1: initialize and relax
-    let (distance, predecessor) = bellman_ford_initialize_relax(g, source);
+    let (distance, mut predecessor) = bellman_ford_initialize_relax(g, source);
 
     // Step 2: Check for negative weight cycle
     'outer: for i in g.node_identifiers() {
@@ -185,6 +185,8 @@ where
             let w = *edge.weight();
             if distance[ix(i)] + w < distance[ix(j)] {
                 // Step 3: negative cycle found
+                // Record the relaxation, so the predecessor chain from j leads into the cycle.
+                predecessor[ix(j)] = Some(i);
                 let start = j;
                 let mut node = start;
                 let mut visited = g.visit_map();
