@@ -1,50 +1,3 @@
-use crate::graph::EditableGraph;
-
-pub const UNDIRECTED_TEST_GRAPH_NODE_COUNT: usize = 5;
-pub const UNDIRECTED_TEST_GRAPH_EDGE_COUNT: usize = 4;
-
-/// A helper function to create a simple undirected graph for testing purposes.
-///
-/// The graph looks as follows:
-/// ```text
-/// 0 --> 1
-/// |      |
-/// v      v
-/// 2 <----3     4
-/// ```
-/// Note that the edges are technically undirected, but we denote here the order of the nodes when
-/// adding the edges to the graph.
-///
-/// The function returns a tuple containing the constructed graph,
-/// a slice of the ids of added nodes, and a slice of the ids of added edges.
-///
-/// For ordering of added nodes and edges, see the implementation of the function.
-fn create_undirected_test_graph<G: EditableGraph<OwnedNodeData = (), OwnedEdgeData = ()>>(
-    graph_constructor: impl Fn() -> G,
-) -> (G, [G::NodeId; 5], [G::EdgeId; 4]) {
-    let mut graph = graph_constructor();
-
-    let node_zero = graph.add_node(()).unwrap();
-    let node_one = graph.add_node(()).unwrap();
-    let node_two = graph.add_node(()).unwrap();
-    let node_three = graph.add_node(()).unwrap();
-    let node_four = graph.add_node(()).unwrap();
-
-    let nodes = [node_zero, node_one, node_two, node_three, node_four];
-
-    let edge_zero = graph.add_edge(nodes[0], nodes[1], ()).unwrap();
-    let edge_one = graph.add_edge(nodes[0], nodes[2], ()).unwrap();
-    let edge_two = graph.add_edge(nodes[1], nodes[3], ()).unwrap();
-    let edge_three = graph.add_edge(nodes[3], nodes[2], ()).unwrap();
-
-    let edges = [edge_zero, edge_one, edge_two, edge_three];
-
-    assert_eq!(nodes.len(), UNDIRECTED_TEST_GRAPH_NODE_COUNT);
-    assert_eq!(edges.len(), UNDIRECTED_TEST_GRAPH_EDGE_COUNT);
-
-    (graph, nodes, edges)
-}
-
 /// Generates a suite of tests for [`UndirectedGraph`][crate::graph::UndirectedGraph]
 /// implementations.
 ///
@@ -224,11 +177,8 @@ pub mod __private_testing {
     use crate::{
         graph::{EditableGraph, UndirectedGraph},
         utils::testing::{
-            check_if_edges_match, check_if_nodes_match,
-            undirected::{
-                UNDIRECTED_TEST_GRAPH_EDGE_COUNT, UNDIRECTED_TEST_GRAPH_NODE_COUNT,
-                create_undirected_test_graph,
-            },
+            TEST_GRAPH_EDGE_COUNT, TEST_GRAPH_NODE_COUNT, check_if_edges_match,
+            check_if_nodes_match, create_test_graph,
         },
     };
 
@@ -237,7 +187,7 @@ pub mod __private_testing {
     >(
         graph_constructor: fn() -> G,
     ) {
-        let (graph, _, _) = create_undirected_test_graph(graph_constructor);
+        let (graph, _, _) = create_test_graph(graph_constructor);
 
         // DensityHint is a hint, so this is intentionally only a smoke test.
         let _density_hint = UndirectedGraph::density_hint(&graph);
@@ -248,26 +198,26 @@ pub mod __private_testing {
     >(
         graph_constructor: fn() -> G,
     ) {
-        let (mut graph, nodes, _) = create_undirected_test_graph(graph_constructor);
+        let (mut graph, nodes, _) = create_test_graph(graph_constructor);
 
         assert_eq!(
             UndirectedGraph::node_count(&graph),
-            UNDIRECTED_TEST_GRAPH_NODE_COUNT,
+            TEST_GRAPH_NODE_COUNT,
             "UndirectedGraph::node_count() did not match expected value"
         );
         assert_eq!(
             UndirectedGraph::edge_count(&graph),
-            UNDIRECTED_TEST_GRAPH_EDGE_COUNT,
+            TEST_GRAPH_EDGE_COUNT,
             "UndirectedGraph::edge_count() did not match expected value"
         );
 
         let cardinality = UndirectedGraph::cardinality(&graph);
         assert_eq!(
-            cardinality.order, UNDIRECTED_TEST_GRAPH_NODE_COUNT,
+            cardinality.order, TEST_GRAPH_NODE_COUNT,
             "UndirectedGraph::cardinality().order did not match expected value"
         );
         assert_eq!(
-            cardinality.size, UNDIRECTED_TEST_GRAPH_EDGE_COUNT,
+            cardinality.size, TEST_GRAPH_EDGE_COUNT,
             "UndirectedGraph::cardinality().size did not match expected value"
         );
 
@@ -275,12 +225,12 @@ pub mod __private_testing {
 
         assert_eq!(
             UndirectedGraph::node_count(&graph),
-            UNDIRECTED_TEST_GRAPH_NODE_COUNT - 1,
+            TEST_GRAPH_NODE_COUNT - 1,
             "UndirectedGraph::node_count() did not match expected value after removing node 0"
         );
         assert_eq!(
             UndirectedGraph::edge_count(&graph),
-            UNDIRECTED_TEST_GRAPH_EDGE_COUNT - 2,
+            TEST_GRAPH_EDGE_COUNT - 2,
             "UndirectedGraph::edge_count() did not match expected value after removing node 0"
         );
     }
@@ -293,11 +243,11 @@ pub mod __private_testing {
         G::NodeId: Hash + Eq,
         G::EdgeId: Hash + Eq,
     {
-        let (graph, nodes, _) = create_undirected_test_graph(graph_constructor);
+        let (graph, nodes, _) = create_test_graph(graph_constructor);
 
         assert_eq!(
             UndirectedGraph::nodes(&graph).count(),
-            UNDIRECTED_TEST_GRAPH_NODE_COUNT,
+            TEST_GRAPH_NODE_COUNT,
             "UndirectedGraph::nodes().count() did not match expected value"
         );
 
@@ -318,11 +268,11 @@ pub mod __private_testing {
         G::NodeId: Hash + Eq,
         G::EdgeId: Hash + Eq,
     {
-        let (mut graph, nodes, _) = create_undirected_test_graph(graph_constructor);
+        let (mut graph, nodes, _) = create_test_graph(graph_constructor);
 
         assert_eq!(
             UndirectedGraph::nodes_mut(&mut graph).count(),
-            UNDIRECTED_TEST_GRAPH_NODE_COUNT,
+            TEST_GRAPH_NODE_COUNT,
             "UndirectedGraph::nodes_mut().count() did not match expected value"
         );
 
@@ -343,7 +293,7 @@ pub mod __private_testing {
         G::NodeId: Hash + Eq,
         G::EdgeId: Hash + Eq,
     {
-        let (graph, nodes, _) = create_undirected_test_graph(graph_constructor);
+        let (graph, nodes, _) = create_test_graph(graph_constructor);
 
         check_if_nodes_match(
             [nodes[4]],
@@ -362,11 +312,11 @@ pub mod __private_testing {
         G::NodeId: Hash + Eq,
         G::EdgeId: Hash + Eq,
     {
-        let (graph, _, edges) = create_undirected_test_graph(graph_constructor);
+        let (graph, _, edges) = create_test_graph(graph_constructor);
 
         assert_eq!(
             UndirectedGraph::edges(&graph).count(),
-            UNDIRECTED_TEST_GRAPH_EDGE_COUNT,
+            TEST_GRAPH_EDGE_COUNT,
             "UndirectedGraph::edges().count() did not match expected value"
         );
 
@@ -387,11 +337,11 @@ pub mod __private_testing {
         G::NodeId: Hash + Eq,
         G::EdgeId: Hash + Eq,
     {
-        let (mut graph, _, edges) = create_undirected_test_graph(graph_constructor);
+        let (mut graph, _, edges) = create_test_graph(graph_constructor);
 
         assert_eq!(
             UndirectedGraph::edges_mut(&mut graph).count(),
-            UNDIRECTED_TEST_GRAPH_EDGE_COUNT,
+            TEST_GRAPH_EDGE_COUNT,
             "UndirectedGraph::edges_mut().count() did not match expected value"
         );
 
@@ -409,7 +359,7 @@ pub mod __private_testing {
     >(
         graph_constructor: fn() -> G,
     ) {
-        let (mut graph, nodes, _) = create_undirected_test_graph(graph_constructor);
+        let (mut graph, nodes, _) = create_test_graph(graph_constructor);
 
         for &node_id in &nodes {
             let node = UndirectedGraph::node(&graph, node_id)
@@ -436,7 +386,7 @@ pub mod __private_testing {
     >(
         graph_constructor: fn() -> G,
     ) {
-        let (mut graph, nodes, _) = create_undirected_test_graph(graph_constructor);
+        let (mut graph, nodes, _) = create_test_graph(graph_constructor);
 
         for &node_id in &nodes {
             let node = UndirectedGraph::node_mut(&mut graph, node_id)
@@ -463,7 +413,7 @@ pub mod __private_testing {
     >(
         graph_constructor: fn() -> G,
     ) {
-        let (mut graph, _, edges) = create_undirected_test_graph(graph_constructor);
+        let (mut graph, _, edges) = create_test_graph(graph_constructor);
 
         for &edge_id in &edges {
             let edge = UndirectedGraph::edge(&graph, edge_id)
@@ -490,7 +440,7 @@ pub mod __private_testing {
     >(
         graph_constructor: fn() -> G,
     ) {
-        let (mut graph, _, edges) = create_undirected_test_graph(graph_constructor);
+        let (mut graph, _, edges) = create_test_graph(graph_constructor);
 
         for &edge_id in &edges {
             let edge = UndirectedGraph::edge_mut(&mut graph, edge_id)
@@ -517,7 +467,7 @@ pub mod __private_testing {
     >(
         graph_constructor: fn() -> G,
     ) {
-        let (graph, nodes, _) = create_undirected_test_graph(graph_constructor);
+        let (graph, nodes, _) = create_test_graph(graph_constructor);
 
         let expected_degrees = [
             (nodes[0], 0, 2),
@@ -544,7 +494,7 @@ pub mod __private_testing {
         G::NodeId: Hash + Eq,
         G::EdgeId: Hash + Eq,
     {
-        let (graph, nodes, edges) = create_undirected_test_graph(graph_constructor);
+        let (graph, nodes, edges) = create_test_graph(graph_constructor);
 
         for (node_number, &node) in nodes.iter().enumerate() {
             let expected_edges = match node_number {
@@ -574,7 +524,7 @@ pub mod __private_testing {
         G::NodeId: Hash + Eq,
         G::EdgeId: Hash + Eq,
     {
-        let (mut graph, nodes, edges) = create_undirected_test_graph(graph_constructor);
+        let (mut graph, nodes, edges) = create_test_graph(graph_constructor);
 
         for (node_number, &node) in nodes.iter().enumerate() {
             let expected_edges = match node_number {
@@ -604,7 +554,7 @@ pub mod __private_testing {
         G::NodeId: Hash + Eq,
         G::EdgeId: Hash + Eq,
     {
-        let (graph, nodes, _) = create_undirected_test_graph(graph_constructor);
+        let (graph, nodes, _) = create_test_graph(graph_constructor);
 
         for node_number in 0..nodes.len() {
             let expected_nodes = match node_number {
@@ -632,7 +582,7 @@ pub mod __private_testing {
         G::NodeId: Hash + Eq,
         G::EdgeId: Hash + Eq,
     {
-        let (graph, nodes, edges) = create_undirected_test_graph(graph_constructor);
+        let (graph, nodes, edges) = create_test_graph(graph_constructor);
 
         let expected_edge_matrix = [
             [None, Some(edges[0]), Some(edges[1]), None, None],
@@ -664,7 +614,7 @@ pub mod __private_testing {
         G::NodeId: Hash + Eq,
         G::EdgeId: Hash + Eq,
     {
-        let (mut graph, nodes, edges) = create_undirected_test_graph(graph_constructor);
+        let (mut graph, nodes, edges) = create_test_graph(graph_constructor);
 
         let expected_edge_matrix = [
             [None, Some(edges[0]), Some(edges[1]), None, None],
@@ -697,7 +647,7 @@ pub mod __private_testing {
     >(
         graph_constructor: fn() -> G,
     ) {
-        let (mut graph, nodes, _) = create_undirected_test_graph(graph_constructor);
+        let (mut graph, nodes, _) = create_test_graph(graph_constructor);
 
         for &node in &nodes {
             assert!(
@@ -723,7 +673,7 @@ pub mod __private_testing {
     >(
         graph_constructor: fn() -> G,
     ) {
-        let (mut graph, _, edges) = create_undirected_test_graph(graph_constructor);
+        let (mut graph, _, edges) = create_test_graph(graph_constructor);
 
         for &edge in &edges {
             assert!(
@@ -749,7 +699,7 @@ pub mod __private_testing {
     >(
         graph_constructor: fn() -> G,
     ) {
-        let (graph, nodes, _) = create_undirected_test_graph(graph_constructor);
+        let (graph, nodes, _) = create_test_graph(graph_constructor);
 
         let expected_adjacency_matrix = [
             [false, true, true, false, false],
@@ -778,7 +728,7 @@ pub mod __private_testing {
     >(
         graph_constructor: fn() -> G,
     ) {
-        let (graph, _, _) = create_undirected_test_graph(graph_constructor);
+        let (graph, _, _) = create_test_graph(graph_constructor);
 
         assert!(
             !UndirectedGraph::is_empty(&graph),
