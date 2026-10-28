@@ -14,7 +14,8 @@ pub trait DataContainer<Id, Data: Clone> {
 
     /// Returns a mutable reference to the data associated with the given id.
     ///
-    /// May return a mutable reference to a default value if no data is associated with the id.
+    /// May insert a default value and return a mutable reference to it if no data is associated
+    /// with the id.
     fn get_mut(&mut self, id: Id) -> &mut Data;
 
     /// Inserts data associated with the given id. If data already exists for the id, it will be

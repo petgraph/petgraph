@@ -289,8 +289,10 @@ impl<N, E> EditableGraph for UndirectedTestGraph<N, E, UndirNodeId, UndirEdgeId>
     }
 }
 
-use crate::{test_storable_graph, test_undirected_editable_graph, test_undirected_graph};
+use crate::{
+    test_undirected_editable_graph, test_undirected_graph, test_undirected_storable_graph,
+};
 
 test_undirected_graph!(UndirectedTestGraph::<(), (), UndirNodeId, UndirEdgeId>::new,);
 test_undirected_editable_graph!(UndirectedTestGraph::<(), (), UndirNodeId, UndirEdgeId>::new,);
-test_storable_graph!(UndirectedTestGraph::<(), (), UndirNodeId, UndirEdgeId>::new,);
+test_undirected_storable_graph!(UndirectedTestGraph::<(), (), UndirNodeId, UndirEdgeId>::new,);

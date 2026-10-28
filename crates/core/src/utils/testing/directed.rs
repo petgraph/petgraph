@@ -1,48 +1,3 @@
-use crate::graph::EditableGraph;
-
-pub const DIRECTED_TEST_GRAPH_NODE_COUNT: usize = 5;
-pub const DIRECTED_TEST_GRAPH_EDGE_COUNT: usize = 4;
-
-/// A helper function to create a simple directed graph for testing purposes.
-///
-/// The graph looks as follows:
-/// ```text
-/// 0 --> 1
-/// |      |
-/// v      v
-/// 2 <----3     4
-/// ```
-///
-/// The function returns a tuple containing the constructed graph,
-/// a slice of the ids of added nodes, and a slice of the ids of added edges.
-///
-/// For ordering of added nodes and edges, see the implementation of the function.
-fn create_directed_test_graph<G: EditableGraph<OwnedNodeData = (), OwnedEdgeData = ()>>(
-    graph_constructor: impl Fn() -> G,
-) -> (G, [G::NodeId; 5], [G::EdgeId; 4]) {
-    let mut graph = graph_constructor();
-
-    let node_zero = graph.add_node(()).unwrap();
-    let node_one = graph.add_node(()).unwrap();
-    let node_two = graph.add_node(()).unwrap();
-    let node_three = graph.add_node(()).unwrap();
-    let node_four = graph.add_node(()).unwrap();
-
-    let nodes = [node_zero, node_one, node_two, node_three, node_four];
-
-    let edge_zero = graph.add_edge(nodes[0], nodes[1], ()).unwrap();
-    let edge_one = graph.add_edge(nodes[0], nodes[2], ()).unwrap();
-    let edge_two = graph.add_edge(nodes[1], nodes[3], ()).unwrap();
-    let edge_three = graph.add_edge(nodes[3], nodes[2], ()).unwrap();
-
-    let edges = [edge_zero, edge_one, edge_two, edge_three];
-
-    assert_eq!(nodes.len(), DIRECTED_TEST_GRAPH_NODE_COUNT);
-    assert_eq!(edges.len(), DIRECTED_TEST_GRAPH_EDGE_COUNT);
-
-    (graph, nodes, edges)
-}
-
 /// Generates a suite of tests for [`DirectedGraph`][crate::graph::DirectedGraph]
 /// implementations.
 ///
@@ -306,11 +261,8 @@ pub mod __private_testing {
     use crate::{
         graph::{DirectedGraph, EditableGraph},
         utils::testing::{
-            check_if_edges_match, check_if_nodes_match,
-            directed::{
-                DIRECTED_TEST_GRAPH_EDGE_COUNT, DIRECTED_TEST_GRAPH_NODE_COUNT,
-                create_directed_test_graph,
-            },
+            TEST_GRAPH_EDGE_COUNT, TEST_GRAPH_NODE_COUNT, check_if_edges_match,
+            check_if_nodes_match, create_test_graph,
         },
     };
 
@@ -319,37 +271,37 @@ pub mod __private_testing {
     >(
         graph_constructor: fn() -> G,
     ) {
-        let (mut graph, nodes, _) = create_directed_test_graph(graph_constructor);
+        let (mut graph, nodes, _) = create_test_graph(graph_constructor);
         assert_eq!(
             DirectedGraph::node_count(&graph),
-            DIRECTED_TEST_GRAPH_NODE_COUNT,
+            TEST_GRAPH_NODE_COUNT,
             "DirectedGraph::node_count() did not match expected value"
         );
         assert_eq!(
             DirectedGraph::edge_count(&graph),
-            DIRECTED_TEST_GRAPH_EDGE_COUNT,
+            TEST_GRAPH_EDGE_COUNT,
             "DirectedGraph::edge_count() did not match expected value"
         );
 
         let cardinality = DirectedGraph::cardinality(&graph);
         assert_eq!(
-            cardinality.order, DIRECTED_TEST_GRAPH_NODE_COUNT,
+            cardinality.order, TEST_GRAPH_NODE_COUNT,
             "DirectedGraph::cardinality().order did not match expected value"
         );
         assert_eq!(
-            cardinality.size, DIRECTED_TEST_GRAPH_EDGE_COUNT,
+            cardinality.size, TEST_GRAPH_EDGE_COUNT,
             "DirectedGraph::cardinality().size did not match expected value"
         );
 
         graph.remove_node(nodes[0]).unwrap();
         assert_eq!(
             DirectedGraph::node_count(&graph),
-            DIRECTED_TEST_GRAPH_NODE_COUNT - 1,
+            TEST_GRAPH_NODE_COUNT - 1,
             "DirectedGraph::node_count() did not match expected value after removing node 0"
         );
         assert_eq!(
             DirectedGraph::edge_count(&graph),
-            DIRECTED_TEST_GRAPH_EDGE_COUNT - 2,
+            TEST_GRAPH_EDGE_COUNT - 2,
             "DirectedGraph::edge_count() did not match expected value after removing node 0"
         );
     }
@@ -359,7 +311,7 @@ pub mod __private_testing {
     >(
         graph_constructor: fn() -> G,
     ) {
-        let (graph, _, _) = create_directed_test_graph(graph_constructor);
+        let (graph, _, _) = create_test_graph(graph_constructor);
 
         // DensityHint is a hint, so this is intentionally only a smoke test.
         let _density_hint = DirectedGraph::density_hint(&graph);
@@ -370,10 +322,10 @@ pub mod __private_testing {
     >(
         graph_constructor: fn() -> G,
     ) {
-        let (graph, nodes, _) = create_directed_test_graph(graph_constructor);
+        let (graph, nodes, _) = create_test_graph(graph_constructor);
         let nodes_count = DirectedGraph::nodes(&graph).count();
         assert_eq!(
-            nodes_count, DIRECTED_TEST_GRAPH_NODE_COUNT,
+            nodes_count, TEST_GRAPH_NODE_COUNT,
             "DirectedGraph::nodes().count() did not match expected value"
         );
         for node in DirectedGraph::nodes(&graph) {
@@ -390,10 +342,10 @@ pub mod __private_testing {
     >(
         graph_constructor: fn() -> G,
     ) {
-        let (mut graph, nodes, _) = create_directed_test_graph(graph_constructor);
+        let (mut graph, nodes, _) = create_test_graph(graph_constructor);
         let nodes_count = DirectedGraph::nodes_mut(&mut graph).count();
         assert_eq!(
-            nodes_count, DIRECTED_TEST_GRAPH_NODE_COUNT,
+            nodes_count, TEST_GRAPH_NODE_COUNT,
             "DirectedGraph::nodes_mut().count() did not match expected value"
         );
         for node in DirectedGraph::nodes_mut(&mut graph) {
@@ -410,7 +362,7 @@ pub mod __private_testing {
     >(
         graph_constructor: fn() -> G,
     ) {
-        let (graph, nodes, _) = create_directed_test_graph(graph_constructor);
+        let (graph, nodes, _) = create_test_graph(graph_constructor);
         let isolated_nodes_count = DirectedGraph::isolated_nodes(&graph).count();
         assert_eq!(
             isolated_nodes_count, 1,
@@ -435,10 +387,10 @@ pub mod __private_testing {
     >(
         graph_constructor: fn() -> G,
     ) {
-        let (graph, _, edges) = create_directed_test_graph(graph_constructor);
+        let (graph, _, edges) = create_test_graph(graph_constructor);
         let edges_count = DirectedGraph::edges(&graph).count();
         assert_eq!(
-            edges_count, DIRECTED_TEST_GRAPH_EDGE_COUNT,
+            edges_count, TEST_GRAPH_EDGE_COUNT,
             "DirectedGraph::edges().count() did not match expected value"
         );
         for edge in DirectedGraph::edges(&graph) {
@@ -455,10 +407,10 @@ pub mod __private_testing {
     >(
         graph_constructor: fn() -> G,
     ) {
-        let (mut graph, _, edges) = create_directed_test_graph(graph_constructor);
+        let (mut graph, _, edges) = create_test_graph(graph_constructor);
         let edges_count = DirectedGraph::edges_mut(&mut graph).count();
         assert_eq!(
-            edges_count, DIRECTED_TEST_GRAPH_EDGE_COUNT,
+            edges_count, TEST_GRAPH_EDGE_COUNT,
             "DirectedGraph::edges_mut().count() did not match expected value"
         );
         for edge in DirectedGraph::edges_mut(&mut graph) {
@@ -475,7 +427,7 @@ pub mod __private_testing {
     >(
         graph_constructor: fn() -> G,
     ) {
-        let (mut graph, nodes, _) = create_directed_test_graph(graph_constructor);
+        let (mut graph, nodes, _) = create_test_graph(graph_constructor);
         for &node_id in &nodes {
             let node =
                 DirectedGraph::node(&graph, node_id).expect("Expected node not found in test_node");
@@ -500,7 +452,7 @@ pub mod __private_testing {
     >(
         graph_constructor: fn() -> G,
     ) {
-        let (mut graph, nodes, _) = create_directed_test_graph(graph_constructor);
+        let (mut graph, nodes, _) = create_test_graph(graph_constructor);
         for &node_id in &nodes {
             let node = DirectedGraph::node_mut(&mut graph, node_id)
                 .expect("Expected node not found in test_node_mut");
@@ -525,7 +477,7 @@ pub mod __private_testing {
     >(
         graph_constructor: fn() -> G,
     ) {
-        let (mut graph, _, edges) = create_directed_test_graph(graph_constructor);
+        let (mut graph, _, edges) = create_test_graph(graph_constructor);
         for &edge_id in &edges {
             let edge =
                 DirectedGraph::edge(&graph, edge_id).expect("Expected edge not found in test_edge");
@@ -547,7 +499,7 @@ pub mod __private_testing {
     >(
         graph_constructor: fn() -> G,
     ) {
-        let (mut graph, _, edges) = create_directed_test_graph(graph_constructor);
+        let (mut graph, _, edges) = create_test_graph(graph_constructor);
         for &edge_id in &edges {
             let edge = DirectedGraph::edge_mut(&mut graph, edge_id)
                 .expect("Expected edge not found in test_edge_mut");
@@ -569,7 +521,7 @@ pub mod __private_testing {
     >(
         graph_constructor: fn() -> G,
     ) {
-        let (graph, nodes, _) = create_directed_test_graph(graph_constructor);
+        let (graph, nodes, _) = create_test_graph(graph_constructor);
         assert_eq!(
             DirectedGraph::in_degree(&graph, nodes[0]),
             0,
@@ -602,7 +554,7 @@ pub mod __private_testing {
     >(
         graph_constructor: fn() -> G,
     ) {
-        let (graph, nodes, _) = create_directed_test_graph(graph_constructor);
+        let (graph, nodes, _) = create_test_graph(graph_constructor);
         assert_eq!(
             DirectedGraph::out_degree(&graph, nodes[0]),
             2,
@@ -635,7 +587,7 @@ pub mod __private_testing {
     >(
         graph_constructor: fn() -> G,
     ) {
-        let (graph, nodes, _) = create_directed_test_graph(graph_constructor);
+        let (graph, nodes, _) = create_test_graph(graph_constructor);
         assert_eq!(
             DirectedGraph::degree(&graph, nodes[0]),
             2,
@@ -671,7 +623,7 @@ pub mod __private_testing {
         G::NodeId: Hash + Eq,
         G::EdgeId: Hash + Eq,
     {
-        let (graph, nodes, edges) = create_directed_test_graph(graph_constructor);
+        let (graph, nodes, edges) = create_test_graph(graph_constructor);
         assert!(
             DirectedGraph::incoming_edges(&graph, nodes[0])
                 .next()
@@ -722,7 +674,7 @@ pub mod __private_testing {
         G::NodeId: Hash + Eq,
         G::EdgeId: Hash + Eq,
     {
-        let (mut graph, nodes, edges) = create_directed_test_graph(graph_constructor);
+        let (mut graph, nodes, edges) = create_test_graph(graph_constructor);
         assert!(
             DirectedGraph::incoming_edges_mut(&mut graph, nodes[0])
                 .next()
@@ -773,7 +725,7 @@ pub mod __private_testing {
         G::NodeId: Hash + Eq,
         G::EdgeId: Hash + Eq,
     {
-        let (graph, nodes, edges) = create_directed_test_graph(graph_constructor);
+        let (graph, nodes, edges) = create_test_graph(graph_constructor);
         let expected_edges_zero = [edges[0], edges[1]];
         check_if_edges_match(
             expected_edges_zero,
@@ -824,7 +776,7 @@ pub mod __private_testing {
         G::NodeId: Hash + Eq,
         G::EdgeId: Hash + Eq,
     {
-        let (mut graph, nodes, edges) = create_directed_test_graph(graph_constructor);
+        let (mut graph, nodes, edges) = create_test_graph(graph_constructor);
         let expected_edges_zero = [edges[0], edges[1]];
         check_if_edges_match(
             expected_edges_zero,
@@ -875,7 +827,7 @@ pub mod __private_testing {
         G::NodeId: Hash + Eq,
         G::EdgeId: Hash + Eq,
     {
-        let (graph, nodes, edges) = create_directed_test_graph(graph_constructor);
+        let (graph, nodes, edges) = create_test_graph(graph_constructor);
         let expected_edges_zero = [edges[0], edges[1]];
         check_if_edges_match(
             expected_edges_zero,
@@ -928,7 +880,7 @@ pub mod __private_testing {
         G::NodeId: Hash + Eq,
         G::EdgeId: Hash + Eq,
     {
-        let (mut graph, nodes, edges) = create_directed_test_graph(graph_constructor);
+        let (mut graph, nodes, edges) = create_test_graph(graph_constructor);
         let expected_edges_zero = [edges[0], edges[1]];
         check_if_edges_match(
             expected_edges_zero,
@@ -981,7 +933,7 @@ pub mod __private_testing {
         G::NodeId: Hash + Eq,
         G::EdgeId: Hash + Eq,
     {
-        let (graph, nodes, _) = create_directed_test_graph(graph_constructor);
+        let (graph, nodes, _) = create_test_graph(graph_constructor);
         assert!(
             DirectedGraph::predecessors(&graph, nodes[0])
                 .next()
@@ -1032,7 +984,7 @@ pub mod __private_testing {
         G::NodeId: Hash + Eq,
         G::EdgeId: Hash + Eq,
     {
-        let (graph, nodes, _) = create_directed_test_graph(graph_constructor);
+        let (graph, nodes, _) = create_test_graph(graph_constructor);
         let expected_successors_zero = [nodes[1], nodes[2]];
         check_if_nodes_match(
             expected_successors_zero,
@@ -1079,7 +1031,7 @@ pub mod __private_testing {
         G::NodeId: Hash + Eq,
         G::EdgeId: Hash + Eq,
     {
-        let (graph, nodes, _) = create_directed_test_graph(graph_constructor);
+        let (graph, nodes, _) = create_test_graph(graph_constructor);
         let expected_adjacencies_zero = [nodes[1], nodes[2]];
         check_if_nodes_match(
             expected_adjacencies_zero,
@@ -1133,7 +1085,7 @@ pub mod __private_testing {
         G::NodeId: Hash + Eq,
         G::EdgeId: Hash + Eq,
     {
-        let (graph, nodes, edges) = create_directed_test_graph(graph_constructor);
+        let (graph, nodes, edges) = create_test_graph(graph_constructor);
 
         let expected_edge_matrix = [
             [None, Some(edges[0]), Some(edges[1]), None, None],
@@ -1166,7 +1118,7 @@ pub mod __private_testing {
         G::NodeId: Hash + Eq,
         G::EdgeId: Hash + Eq,
     {
-        let (mut graph, nodes, edges) = create_directed_test_graph(graph_constructor);
+        let (mut graph, nodes, edges) = create_test_graph(graph_constructor);
 
         let expected_edge_matrix = [
             [None, Some(edges[0]), Some(edges[1]), None, None],
@@ -1203,7 +1155,7 @@ pub mod __private_testing {
         G::NodeId: Hash + Eq,
         G::EdgeId: Hash + Eq,
     {
-        let (graph, nodes, edges) = create_directed_test_graph(graph_constructor);
+        let (graph, nodes, edges) = create_test_graph(graph_constructor);
 
         let expected_edge_matrix = [
             [None, Some(edges[0]), Some(edges[1]), None, None],
@@ -1236,7 +1188,7 @@ pub mod __private_testing {
         G::NodeId: Hash + Eq,
         G::EdgeId: Hash + Eq,
     {
-        let (mut graph, nodes, edges) = create_directed_test_graph(graph_constructor);
+        let (mut graph, nodes, edges) = create_test_graph(graph_constructor);
 
         let expected_edge_matrix = [
             [None, Some(edges[0]), Some(edges[1]), None, None],
@@ -1269,7 +1221,7 @@ pub mod __private_testing {
     >(
         graph_constructor: fn() -> G,
     ) {
-        let (mut graph, nodes, _) = create_directed_test_graph(graph_constructor);
+        let (mut graph, nodes, _) = create_test_graph(graph_constructor);
 
         for node in &nodes {
             assert!(
@@ -1294,7 +1246,7 @@ pub mod __private_testing {
     >(
         graph_constructor: fn() -> G,
     ) {
-        let (mut graph, _, edges) = create_directed_test_graph(graph_constructor);
+        let (mut graph, _, edges) = create_test_graph(graph_constructor);
 
         for edge in &edges {
             assert!(
@@ -1318,7 +1270,7 @@ pub mod __private_testing {
     >(
         graph_constructor: fn() -> G,
     ) {
-        let (graph, nodes, _) = create_directed_test_graph(graph_constructor);
+        let (graph, nodes, _) = create_test_graph(graph_constructor);
 
         let adjacent_node_pairs = [
             (nodes[0], nodes[1]),
@@ -1345,7 +1297,7 @@ pub mod __private_testing {
     >(
         graph_constructor: fn() -> G,
     ) {
-        let (graph, _, _) = create_directed_test_graph(graph_constructor);
+        let (graph, _, _) = create_test_graph(graph_constructor);
 
         assert!(
             !DirectedGraph::is_empty(&graph),
@@ -1380,7 +1332,7 @@ pub mod __private_testing {
         G::NodeId: Hash + Eq,
         G::EdgeId: Hash + Eq,
     {
-        let (graph, nodes, _) = create_directed_test_graph(graph_constructor);
+        let (graph, nodes, _) = create_test_graph(graph_constructor);
 
         let expected_sources = [nodes[0], nodes[4]];
         check_if_nodes_match(
@@ -1400,7 +1352,7 @@ pub mod __private_testing {
         G::NodeId: Hash + Eq,
         G::EdgeId: Hash + Eq,
     {
-        let (graph, nodes, _) = create_directed_test_graph(graph_constructor);
+        let (graph, nodes, _) = create_test_graph(graph_constructor);
 
         let expected_sinks = [nodes[2], nodes[4]];
         check_if_nodes_match(
