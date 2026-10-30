@@ -1010,7 +1010,9 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>> StorableGraph for MatrixGraph<N, E, 
 
 #[cfg(test)]
 mod tests {
-    use petgraph_core::test_directed_graph;
+    use petgraph_core::{
+        test_directed_editable_graph, test_directed_graph, test_directed_storable_graph,
+    };
 
     use super::{super::*, *};
 
@@ -1239,7 +1241,9 @@ mod tests {
         );
     }
 
-    test_directed_graph!(
-        MatrixGraph::<(), (), Directed, Option<()>>::new_directed,
-    );
+    test_directed_graph!(MatrixGraph::<(), (), Directed, Option<()>>::new_directed,);
+
+    test_directed_editable_graph!(MatrixGraph::<(), (), Directed, Option<()>>::new_directed,);
+
+    test_directed_storable_graph!(MatrixGraph::<(), (), Directed, Option<()>>::new_directed,);
 }

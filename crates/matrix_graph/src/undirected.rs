@@ -426,8 +426,8 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>> UndirectedGraph for UnMatrixGraph<N,
     }
 }
 
-/// An iterator over the edges of a directed graph which yields the source and target of each edge
-/// along with a reference to the edge data.
+/// An iterator over the edges of an undirected graph which yields the source and target of each
+/// edge along with a reference to the edge data.
 struct EdgeIter<'a, It: Iterator<Item = &'a Null>, Null: NicheWrapper + 'a> {
     edges: It,
     next_edge_tuple: (usize, usize),
@@ -456,8 +456,8 @@ impl<'a, It: Iterator<Item = &'a Null>, Null: NicheWrapper> Iterator for EdgeIte
     }
 }
 
-/// An iterator over the edges of a directed graph which yields the source and target of each edge
-/// along with a mutable reference to the edge data.
+/// An iterator over the edges of an undirected graph which yields the source and target of each
+/// edge along with a mutable reference to the edge data.
 struct EdgeIterMut<'a, It: Iterator<Item = &'a mut Null>, Null: NicheWrapper + 'a> {
     edges: It,
     next_edge_tuple: (usize, usize),
@@ -537,7 +537,7 @@ impl<'a, Null: NicheWrapper> Iterator for NeighborIterator<'a, Null> {
     }
 }
 
-/// An iterator over the neighbors of a node (`source_node`) in a directed graph which yields the
+/// An iterator over the neighbors of a node (`source_node`) in an undirected graph which yields the
 /// neighbor along with a mutable reference to the edge data for the edge connecting the source node
 /// to the neighbor.
 struct NeighborIterMut<'a, Null> {
@@ -694,7 +694,9 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>> StorableGraph for MatrixGraph<N, E, 
 
 #[cfg(test)]
 mod tests {
-    use petgraph_core::test_undirected_graph;
+    use petgraph_core::{
+        test_undirected_editable_graph, test_undirected_graph, test_undirected_storable_graph,
+    };
 
     use super::{super::*, *};
 
@@ -922,7 +924,9 @@ mod tests {
         );
     }
 
-    test_undirected_graph!(
-        MatrixGraph::<(), (), Undirected, Option<()>>::new_undirected,
-    );
+    test_undirected_graph!(MatrixGraph::<(), (), Undirected, Option<()>>::new_undirected,);
+
+    test_undirected_editable_graph!(MatrixGraph::<(), (), Undirected, Option<()>>::new_undirected,);
+
+    test_undirected_storable_graph!(MatrixGraph::<(), (), Undirected, Option<()>>::new_undirected,);
 }
