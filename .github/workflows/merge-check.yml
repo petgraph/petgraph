@@ -60,10 +60,8 @@ jobs:
       # Remove repo toolchain pin so we can specify toolchain manually
       - name: Remove toolchain pin
         run: rm -f rust-toolchain.toml rustup-toolchain.toml
-      - name: Install stable toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
+      - name: Install nightly toolchain
+        uses: dtolnay/rust-toolchain@nightly
       - name: Install cargo-nextest
         uses: taiki-e/install-action@v2
         with:
