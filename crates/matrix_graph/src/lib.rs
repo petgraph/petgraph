@@ -175,7 +175,7 @@ impl<T: Default + PartialEq> NicheWrapper for NotZero<T> {
     fn as_ref(&self) -> Option<&Self::Wrapped> {
         if self.is_null() { None } else { Some(&self.0) }
     }
-    
+
     #[doc(hidden)]
     fn as_mut(&mut self) -> Option<&mut Self::Wrapped> {
         if self.is_null() {
@@ -324,9 +324,15 @@ where
 
     #[inline]
     fn extend_capacity_for_edge(&mut self, node_a: MatrixGraphNodeId, node_b: MatrixGraphNodeId) {
-        let min_node = cmp::max(node_a, node_b);
-        if min_node.0 >= self.node_capacity {
-            self.extend_capacity_for_node(min_node.0 + 1, false);
+        let max_node = cmp::max(node_a, node_b);
+        if max_node.0 >= self.node_capacity {
+            self.extend_capacity_for_node(
+                max_node
+                    .0
+                    .checked_add(1)
+                    .unwrap_or_else(|| panic!("Matrix capacity overflow")),
+                false,
+            );
         }
     }
 }
@@ -405,9 +411,10 @@ where
         // We can safely use the unchecked version here, since we just extended the capacity for the
         // edge.
         let position = self.to_edge_position_unchecked(source, target);
-        let old_data = core::mem::replace(&mut self.flattened_edge_data[position], Null::new(data));
+        let old_data = &mut self.flattened_edge_data[position];
         if old_data.is_null() {
             self.edge_count += 1;
+            *old_data = Null::new(data);
         } else {
             return Err(AddEdgeError::EdgeAlreadyExists(source, target));
         }
