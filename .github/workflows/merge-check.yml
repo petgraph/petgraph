@@ -7,7 +7,7 @@ on:
 
 name: Merge check
 
-# These jobs run on pushes to master or pull_request with the `S-run-thorough-ci-tests` label
+# These jobs run on pushes to master or pull_request with the `S-run-thorough-ci-tests` label.
 jobs:
   powerset_features_test:
     if: ${{ (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'S-run-thorough-ci-tests')) || github.event_name == 'push' }}
@@ -44,7 +44,7 @@ jobs:
           cargo hack nextest run --clean-per-run --feature-powerset --depth 1 --package ${{ matrix.crate.spec }}
 
   powerset_features_miri:
-    # This job runs on pushes to master or pull_request with the `S-run-thorough-ci-tests` label
+    # This job runs on pushes to master or pull_request with the `S-run-thorough-ci-tests` label.
     if: ${{ (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'S-run-thorough-ci-tests')) || github.event_name == 'push' }}
     runs-on: ubuntu-latest
     strategy:
@@ -52,7 +52,7 @@ jobs:
         crate:
           - { name: petgraph, spec: petgraph@0.9.0 }
           - { name: petgraph-core, spec: petgraph-core }
-    name: Powerset feature combination tests ${{ matrix.crate.name }}
+    name: Powerset feature combination miri ${{ matrix.crate.name }}
 
     steps:
       - name: Checkout code
