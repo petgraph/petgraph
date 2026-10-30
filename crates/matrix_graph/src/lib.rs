@@ -141,32 +141,34 @@ impl<T> NicheWrapper for Option<T> {
 /// `NotZero` is used to optimize the memory usage of edge data `E` in a
 /// [`MatrixGraph`], replacing the default `Option<E>` sentinel.
 ///
-/// Pre-requisite: edge data should implement [`Zeroable`].
+/// The [`Default`] value of the edge data (such as `0` for the numeric types) is used as the
+/// sentinel to mark the absence of an edge. Edge data must therefore implement [`Default`] and
+/// [`PartialEq`], and adding an edge whose data equals the default value panics.
 ///
 /// Note that if you're already using the standard non-zero types (such as `NonZeroU32`), you don't
 /// have to use this wrapper and can leave the default `Null` type argument.
 pub struct NotZero<T>(T);
 
-impl<T: Zeroable> Default for NotZero<T> {
+impl<T: Default + PartialEq> Default for NotZero<T> {
     fn default() -> Self {
-        Self(T::zero())
+        Self(T::default())
     }
 }
 
-impl<T: Zeroable> NicheWrapper for NotZero<T> {
+impl<T: Default + PartialEq> NicheWrapper for NotZero<T> {
     #[doc(hidden)]
     type Wrapped = T;
 
     #[doc(hidden)]
     fn new(value: T) -> Self {
-        assert!(!value.is_zero());
+        assert!(value != T::default());
         Self(value)
     }
 
     // implemented here for optimization purposes
     #[doc(hidden)]
     fn is_null(&self) -> bool {
-        self.0.is_zero()
+        self.0 == T::default()
     }
 
     #[doc(hidden)]
@@ -184,7 +186,7 @@ impl<T: Zeroable> NicheWrapper for NotZero<T> {
     }
 }
 
-impl<T: Zeroable> From<NotZero<T>> for Option<T> {
+impl<T: Default + PartialEq> From<NotZero<T>> for Option<T> {
     fn from(not_zero: NotZero<T>) -> Self {
         if not_zero.is_null() {
             None
@@ -193,49 +195,6 @@ impl<T: Zeroable> From<NotZero<T>> for Option<T> {
         }
     }
 }
-
-/// Base trait for types that have a zero-like value and can thus be wrapped in a
-/// [`NotZero`].
-///
-/// Implementors must provide a singleton zero-like object that will be used to mark empty edges in
-/// a [`MatrixGraph`].
-///
-/// Note that this trait is already implemented for the base numeric types.
-pub trait Zeroable {
-    /// Return the singleton object which can be used as a sentinel value.
-    fn zero() -> Self;
-
-    /// Return true if `self` is equal to the sentinel value.
-    fn is_zero(&self) -> bool;
-}
-
-macro_rules! zeroable_impl {
-    ($t:ty, $z:expr) => {
-        impl Zeroable for $t {
-            #[allow(clippy::cast_precision_loss)]
-            fn zero() -> Self {
-                $z as $t
-            }
-
-            #[allow(clippy::float_cmp)]
-            fn is_zero(&self) -> bool {
-                self == &Self::zero()
-            }
-        }
-    };
-}
-
-macro_rules! zeroable_impls {
-    ($($t:ty),*) => {
-        $(
-            zeroable_impl!($t, 0);
-        )*
-    }
-}
-
-zeroable_impls!(u8, u16, u32, u64, usize);
-zeroable_impls!(i8, i16, i32, i64, isize);
-zeroable_impls!(f32, f64);
 
 /// Internal trait for extra methods for directed and undirected [`MatrixGraph`]s, to simplify their
 /// implementations.
@@ -297,8 +256,8 @@ pub trait MatrixGraphExtras<N>: Sealed + Graph {
 /// - Associated data `N` for nodes and `E` for edges. The associated data can be of arbitrary type.
 /// - Edge type `Dir` determines whether the graph edges are [`Directed`] or [`Undirected`].
 /// - Nullable type `Null`, which denotes the edges' presence (defaults to `Option<E>`). You may
-///   specify [`NotZero<E>`](struct.NotZero.html) if you want to use a sentinel value (such as 0) to
-///   mark the absence of an edge.
+///   specify [`NotZero<E>`](struct.NotZero.html) if you want to use the default value of `E` (such
+///   as 0) as a sentinel to mark the absence of an edge.
 ///
 /// The graph uses **O(|V^2|)** space, with fast edge insertion & amortized node insertion, as well
 /// as efficient graph search and graph algorithms on dense graphs.

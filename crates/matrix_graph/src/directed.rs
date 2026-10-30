@@ -1102,7 +1102,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic = "assertion failed: !value.is_zero()"]
+    #[should_panic = "assertion failed: value != T::default()"]
     fn test_not_zero_asserted() {
         let mut graph: MatrixGraph<(), i32, Directed, NotZero<i32>> = MatrixGraph::default();
 
