@@ -7,6 +7,7 @@ pub(crate) use __common::*;
 
 // WARNING: This module contains only internal testing helper functions and should not be considered
 // part of the public API. It is subject to change at any time.
+#[doc(hidden)]
 pub mod __common {
     use crate::graph::EditableGraph;
 
@@ -38,6 +39,9 @@ pub mod __common {
     /// [`TEST_GRAPH_NODE_COUNT`], [`TEST_GRAPH_EDGE_COUNT`] and [`TEST_GRAPH_EDGE_ENDPOINTS`].
     ///
     /// For ordering of added nodes and edges, see the implementation of the function.
+    ///
+    /// # Panics
+    /// Panics if adding a node or an edge to the graph returns an error.
     pub fn create_test_graph<G: EditableGraph<OwnedNodeData = (), OwnedEdgeData = ()>>(
         graph_constructor: impl Fn() -> G,
     ) -> (
@@ -66,10 +70,39 @@ pub mod __common {
         (graph, nodes, edges)
     }
 
+    /// Helper functions that returns the ids of the edges in the test graph whose `(source,
+    /// target)` node indices satisfy `predicate`.
+    ///
+    /// `edges` has to be the array of edge ids returned by [`create_test_graph`]. The node indices
+    /// passed to `predicate` refer to the array of node ids returned by it.
+    pub fn expected_edges<E>(
+        edges: [E; TEST_GRAPH_EDGE_COUNT],
+        predicate: impl Fn(usize, usize) -> bool,
+    ) -> impl Iterator<Item = E> {
+        TEST_GRAPH_EDGE_ENDPOINTS
+            .into_iter()
+            .zip(edges)
+            .filter(move |&((source, target), _)| predicate(source, target))
+            .map(|(_, edge)| edge)
+    }
+
+    /// Helper function that returns the `(id, source, target)` triples of the edges in the test
+    /// graph.
+    ///
+    /// `nodes` and `edges` have to be the arrays of ids returned by [`create_test_graph`].
+    pub fn expected_edge_endpoints<N: Copy, E: Copy>(
+        nodes: [N; TEST_GRAPH_NODE_COUNT],
+        edges: [E; TEST_GRAPH_EDGE_COUNT],
+    ) -> [(E, N, N); TEST_GRAPH_EDGE_COUNT] {
+        core::array::from_fn(|index| {
+            let (source, target) = TEST_GRAPH_EDGE_ENDPOINTS[index];
+            (edges[index], nodes[source], nodes[target])
+        })
+    }
+
     /// Helper function to check if the edges returned by an iterator match the expected edges.
     ///
     /// The additional arguments are just for better error messages.
-    #[doc(hidden)]
     pub fn check_if_edges_match<T>(
         expected_edges: impl IntoIterator<Item = T>,
         actual_edges: impl Iterator<Item = T>,
@@ -100,7 +133,6 @@ pub mod __common {
     /// Helper function to check if the nodes returned by an iterator match the expected nodes.
     ///
     /// The additional arguments are just for better error messages.
-    #[doc(hidden)]
     pub fn check_if_nodes_match<T>(
         expected_nodes: impl IntoIterator<Item = T>,
         actual_nodes: impl Iterator<Item = T>,

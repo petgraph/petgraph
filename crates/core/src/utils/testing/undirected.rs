@@ -176,11 +176,27 @@ pub mod __private_testing {
 
     use crate::{
         graph::{EditableGraph, UndirectedGraph},
+        id::Id,
         utils::testing::{
-            TEST_GRAPH_EDGE_COUNT, TEST_GRAPH_NODE_COUNT, check_if_edges_match,
-            check_if_nodes_match, create_test_graph,
+            TEST_GRAPH_EDGE_COUNT, TEST_GRAPH_EDGE_ENDPOINTS, TEST_GRAPH_NODE_COUNT,
+            check_if_edges_match, check_if_nodes_match, create_test_graph, expected_edge_endpoints,
+            expected_edges,
         },
     };
+
+    /// Returns the given `(id, source, target)` triple of an edge with its endpoints swapped, if
+    /// the swapped triple is contained in `expected_endpoints`. This is needed, as undirected
+    /// graphs may return the endpoints of an edge in either order.
+    fn normalize_endpoints<N: Id, E: Id>(
+        expected_endpoints: &[(E, N, N)],
+        (id, source, target): (E, N, N),
+    ) -> (E, N, N) {
+        if expected_endpoints.contains(&(id, target, source)) {
+            (id, target, source)
+        } else {
+            (id, source, target)
+        }
+    }
 
     pub fn test_density_hint_inner<
         G: UndirectedGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = ()>,
@@ -312,7 +328,7 @@ pub mod __private_testing {
         G::NodeId: Hash + Eq,
         G::EdgeId: Hash + Eq,
     {
-        let (graph, _, edges) = create_test_graph(graph_constructor);
+        let (graph, nodes, edges) = create_test_graph(graph_constructor);
 
         assert_eq!(
             UndirectedGraph::edges(&graph).count(),
@@ -320,9 +336,12 @@ pub mod __private_testing {
             "UndirectedGraph::edges().count() did not match expected value"
         );
 
+        let expected_endpoints = expected_edge_endpoints(nodes, edges);
         check_if_edges_match(
-            edges.iter().copied(),
-            UndirectedGraph::edges(&graph).map(|edge| edge.id),
+            expected_endpoints,
+            UndirectedGraph::edges(&graph).map(|edge| {
+                normalize_endpoints(&expected_endpoints, (edge.id, edge.source, edge.target))
+            }),
             "edges",
             "UndirectedGraph",
             "graph",
@@ -337,7 +356,7 @@ pub mod __private_testing {
         G::NodeId: Hash + Eq,
         G::EdgeId: Hash + Eq,
     {
-        let (mut graph, _, edges) = create_test_graph(graph_constructor);
+        let (mut graph, nodes, edges) = create_test_graph(graph_constructor);
 
         assert_eq!(
             UndirectedGraph::edges_mut(&mut graph).count(),
@@ -345,9 +364,12 @@ pub mod __private_testing {
             "UndirectedGraph::edges_mut().count() did not match expected value"
         );
 
+        let expected_endpoints = expected_edge_endpoints(nodes, edges);
         check_if_edges_match(
-            edges.iter().copied(),
-            UndirectedGraph::edges_mut(&mut graph).map(|edge| edge.id),
+            expected_endpoints,
+            UndirectedGraph::edges_mut(&mut graph).map(|edge| {
+                normalize_endpoints(&expected_endpoints, (edge.id, edge.source, edge.target))
+            }),
             "edges_mut",
             "UndirectedGraph",
             "graph",
@@ -467,19 +489,14 @@ pub mod __private_testing {
     >(
         graph_constructor: fn() -> G,
     ) {
-        let (graph, nodes, _) = create_test_graph(graph_constructor);
+        let (graph, nodes, edges) = create_test_graph(graph_constructor);
 
-        let expected_degrees = [
-            (nodes[0], 0, 2),
-            (nodes[1], 1, 2),
-            (nodes[2], 2, 2),
-            (nodes[3], 3, 2),
-            (nodes[4], 4, 0),
-        ];
-
-        for &(node_id, node_number, expected_degree) in &expected_degrees {
+        for (node_number, &node) in nodes.iter().enumerate() {
+            // An edge counts once for each of its endpoints, so self-loops count twice.
+            let expected_degree = expected_edges(edges, |source, _| source == node_number).count()
+                + expected_edges(edges, |_, target| target == node_number).count();
             assert_eq!(
-                UndirectedGraph::degree(&graph, node_id),
+                UndirectedGraph::degree(&graph, node),
                 expected_degree,
                 "UndirectedGraph::degree() did not return expected value for node {node_number}"
             );
@@ -497,17 +514,10 @@ pub mod __private_testing {
         let (graph, nodes, edges) = create_test_graph(graph_constructor);
 
         for (node_number, &node) in nodes.iter().enumerate() {
-            let expected_edges = match node_number {
-                0 => [Some(edges[0]), Some(edges[1])],
-                1 => [Some(edges[0]), Some(edges[2])],
-                2 => [Some(edges[1]), Some(edges[3])],
-                3 => [Some(edges[2]), Some(edges[3])],
-                4 => [None, None],
-                _ => unreachable!(),
-            };
-
             check_if_edges_match(
-                core::iter::IntoIterator::into_iter(expected_edges).flatten(),
+                expected_edges(edges, |source, target| {
+                    source == node_number || target == node_number
+                }),
                 UndirectedGraph::incident_edges(&graph, node).map(|edge| edge.id),
                 "incident_edges",
                 "UndirectedGraph",
@@ -527,17 +537,10 @@ pub mod __private_testing {
         let (mut graph, nodes, edges) = create_test_graph(graph_constructor);
 
         for (node_number, &node) in nodes.iter().enumerate() {
-            let expected_edges = match node_number {
-                0 => [Some(edges[0]), Some(edges[1])],
-                1 => [Some(edges[0]), Some(edges[2])],
-                2 => [Some(edges[1]), Some(edges[3])],
-                3 => [Some(edges[2]), Some(edges[3])],
-                4 => [None, None],
-                _ => unreachable!(),
-            };
-
             check_if_edges_match(
-                core::iter::IntoIterator::into_iter(expected_edges).flatten(),
+                expected_edges(edges, |source, target| {
+                    source == node_number || target == node_number
+                }),
                 UndirectedGraph::incident_edges_mut(&mut graph, node).map(|edge| edge.id),
                 "incident_edges_mut",
                 "UndirectedGraph",
@@ -584,18 +587,13 @@ pub mod __private_testing {
     {
         let (graph, nodes, edges) = create_test_graph(graph_constructor);
 
-        let expected_edge_matrix = [
-            [None, Some(edges[0]), Some(edges[1]), None, None],
-            [Some(edges[0]), None, None, Some(edges[2]), None],
-            [Some(edges[1]), None, None, Some(edges[3]), None],
-            [None, Some(edges[2]), Some(edges[3]), None, None],
-            [None, None, None, None, None],
-        ];
-
         for lhs_number in 0..nodes.len() {
             for rhs_number in 0..nodes.len() {
                 check_if_edges_match(
-                    expected_edge_matrix[lhs_number][rhs_number],
+                    expected_edges(edges, |source, target| {
+                        (source, target) == (lhs_number, rhs_number)
+                            || (target, source) == (lhs_number, rhs_number)
+                    }),
                     UndirectedGraph::edges_connecting(&graph, nodes[lhs_number], nodes[rhs_number])
                         .map(|edge| edge.id),
                     "edges_connecting",
@@ -616,18 +614,13 @@ pub mod __private_testing {
     {
         let (mut graph, nodes, edges) = create_test_graph(graph_constructor);
 
-        let expected_edge_matrix = [
-            [None, Some(edges[0]), Some(edges[1]), None, None],
-            [Some(edges[0]), None, None, Some(edges[2]), None],
-            [Some(edges[1]), None, None, Some(edges[3]), None],
-            [None, Some(edges[2]), Some(edges[3]), None, None],
-            [None, None, None, None, None],
-        ];
-
         for lhs_number in 0..nodes.len() {
             for rhs_number in 0..nodes.len() {
                 check_if_edges_match(
-                    expected_edge_matrix[lhs_number][rhs_number],
+                    expected_edges(edges, |source, target| {
+                        (source, target) == (lhs_number, rhs_number)
+                            || (target, source) == (lhs_number, rhs_number)
+                    }),
                     UndirectedGraph::edges_connecting_mut(
                         &mut graph,
                         nodes[lhs_number],
@@ -701,19 +694,14 @@ pub mod __private_testing {
     ) {
         let (graph, nodes, _) = create_test_graph(graph_constructor);
 
-        let expected_adjacency_matrix = [
-            [false, true, true, false, false],
-            [true, false, false, true, false],
-            [true, false, false, true, false],
-            [false, true, true, false, false],
-            [false, false, false, false, false],
-        ];
-
         for lhs_number in 0..nodes.len() {
             for rhs_number in 0..nodes.len() {
+                let expected_adjacency = TEST_GRAPH_EDGE_ENDPOINTS
+                    .contains(&(lhs_number, rhs_number))
+                    || TEST_GRAPH_EDGE_ENDPOINTS.contains(&(rhs_number, lhs_number));
                 assert_eq!(
                     UndirectedGraph::is_adjacent(&graph, nodes[lhs_number], nodes[rhs_number],),
-                    expected_adjacency_matrix[lhs_number][rhs_number],
+                    expected_adjacency,
                     "UndirectedGraph::is_adjacent() returned incorrect result for nodes {:?} and \
                      {:?}",
                     nodes[lhs_number],

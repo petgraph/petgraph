@@ -261,8 +261,9 @@ pub mod __private_testing {
     use crate::{
         graph::{DirectedGraph, EditableGraph},
         utils::testing::{
-            TEST_GRAPH_EDGE_COUNT, TEST_GRAPH_NODE_COUNT, check_if_edges_match,
-            check_if_nodes_match, create_test_graph,
+            TEST_GRAPH_EDGE_COUNT, TEST_GRAPH_EDGE_ENDPOINTS, TEST_GRAPH_NODE_COUNT,
+            check_if_edges_match, check_if_nodes_match, create_test_graph, expected_edge_endpoints,
+            expected_edges,
         },
     };
 
@@ -386,40 +387,46 @@ pub mod __private_testing {
         G: DirectedGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = ()>,
     >(
         graph_constructor: fn() -> G,
-    ) {
-        let (graph, _, edges) = create_test_graph(graph_constructor);
+    ) where
+        G::NodeId: Hash + Eq,
+        G::EdgeId: Hash + Eq,
+    {
+        let (graph, nodes, edges) = create_test_graph(graph_constructor);
         let edges_count = DirectedGraph::edges(&graph).count();
         assert_eq!(
             edges_count, TEST_GRAPH_EDGE_COUNT,
             "DirectedGraph::edges().count() did not match expected value"
         );
-        for edge in DirectedGraph::edges(&graph) {
-            assert!(
-                edges.contains(&edge.id),
-                "DirectedGraph::edges() contained unexpected edge id: {:?}",
-                edge.id
-            );
-        }
+        check_if_edges_match(
+            expected_edge_endpoints(nodes, edges),
+            DirectedGraph::edges(&graph).map(|edge| (edge.id, edge.source, edge.target)),
+            "edges",
+            "DirectedGraph",
+            "graph",
+        );
     }
 
     pub fn test_edges_mut_inner<
         G: DirectedGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = ()>,
     >(
         graph_constructor: fn() -> G,
-    ) {
-        let (mut graph, _, edges) = create_test_graph(graph_constructor);
+    ) where
+        G::NodeId: Hash + Eq,
+        G::EdgeId: Hash + Eq,
+    {
+        let (mut graph, nodes, edges) = create_test_graph(graph_constructor);
         let edges_count = DirectedGraph::edges_mut(&mut graph).count();
         assert_eq!(
             edges_count, TEST_GRAPH_EDGE_COUNT,
             "DirectedGraph::edges_mut().count() did not match expected value"
         );
-        for edge in DirectedGraph::edges_mut(&mut graph) {
-            assert!(
-                edges.contains(&edge.id),
-                "DirectedGraph::edges_mut() contained unexpected edge id: {:?}",
-                edge.id
-            );
-        }
+        check_if_edges_match(
+            expected_edge_endpoints(nodes, edges),
+            DirectedGraph::edges_mut(&mut graph).map(|edge| (edge.id, edge.source, edge.target)),
+            "edges_mut",
+            "DirectedGraph",
+            "graph",
+        );
     }
 
     pub fn test_node_inner<
@@ -521,32 +528,14 @@ pub mod __private_testing {
     >(
         graph_constructor: fn() -> G,
     ) {
-        let (graph, nodes, _) = create_test_graph(graph_constructor);
-        assert_eq!(
-            DirectedGraph::in_degree(&graph, nodes[0]),
-            0,
-            "DirectedGraph::in_degree() did not return expected value for node 0"
-        );
-        assert_eq!(
-            DirectedGraph::in_degree(&graph, nodes[1]),
-            1,
-            "DirectedGraph::in_degree() did not return expected value for node 1"
-        );
-        assert_eq!(
-            DirectedGraph::in_degree(&graph, nodes[2]),
-            2,
-            "DirectedGraph::in_degree() did not return expected value for node 2"
-        );
-        assert_eq!(
-            DirectedGraph::in_degree(&graph, nodes[3]),
-            1,
-            "DirectedGraph::in_degree() did not return expected value for node 3"
-        );
-        assert_eq!(
-            DirectedGraph::in_degree(&graph, nodes[4]),
-            0,
-            "DirectedGraph::in_degree() did not return expected value for node 4"
-        );
+        let (graph, nodes, edges) = create_test_graph(graph_constructor);
+        for (node_number, &node) in nodes.iter().enumerate() {
+            assert_eq!(
+                DirectedGraph::in_degree(&graph, node),
+                expected_edges(edges, |_, target| target == node_number).count(),
+                "DirectedGraph::in_degree() did not return expected value for node {node_number}"
+            );
+        }
     }
 
     pub fn test_out_degree_inner<
@@ -554,32 +543,14 @@ pub mod __private_testing {
     >(
         graph_constructor: fn() -> G,
     ) {
-        let (graph, nodes, _) = create_test_graph(graph_constructor);
-        assert_eq!(
-            DirectedGraph::out_degree(&graph, nodes[0]),
-            2,
-            "DirectedGraph::out_degree() did not return expected value for node 0"
-        );
-        assert_eq!(
-            DirectedGraph::out_degree(&graph, nodes[1]),
-            1,
-            "DirectedGraph::out_degree() did not return expected value for node 1"
-        );
-        assert_eq!(
-            DirectedGraph::out_degree(&graph, nodes[2]),
-            0,
-            "DirectedGraph::out_degree() did not return expected value for node 2"
-        );
-        assert_eq!(
-            DirectedGraph::out_degree(&graph, nodes[3]),
-            1,
-            "DirectedGraph::out_degree() did not return expected value for node 3"
-        );
-        assert_eq!(
-            DirectedGraph::out_degree(&graph, nodes[4]),
-            0,
-            "DirectedGraph::out_degree() did not return expected value for node 4"
-        );
+        let (graph, nodes, edges) = create_test_graph(graph_constructor);
+        for (node_number, &node) in nodes.iter().enumerate() {
+            assert_eq!(
+                DirectedGraph::out_degree(&graph, node),
+                expected_edges(edges, |source, _| source == node_number).count(),
+                "DirectedGraph::out_degree() did not return expected value for node {node_number}"
+            );
+        }
     }
 
     pub fn test_degree_inner<
@@ -587,32 +558,17 @@ pub mod __private_testing {
     >(
         graph_constructor: fn() -> G,
     ) {
-        let (graph, nodes, _) = create_test_graph(graph_constructor);
-        assert_eq!(
-            DirectedGraph::degree(&graph, nodes[0]),
-            2,
-            "DirectedGraph::degree() did not return expected value for node 0"
-        );
-        assert_eq!(
-            DirectedGraph::degree(&graph, nodes[1]),
-            2,
-            "DirectedGraph::degree() did not return expected value for node 1"
-        );
-        assert_eq!(
-            DirectedGraph::degree(&graph, nodes[2]),
-            2,
-            "DirectedGraph::degree() did not return expected value for node 2"
-        );
-        assert_eq!(
-            DirectedGraph::degree(&graph, nodes[3]),
-            2,
-            "DirectedGraph::degree() did not return expected value for node 3"
-        );
-        assert_eq!(
-            DirectedGraph::degree(&graph, nodes[4]),
-            0,
-            "DirectedGraph::degree() did not return expected value for node 4"
-        );
+        let (graph, nodes, edges) = create_test_graph(graph_constructor);
+        for (node_number, &node) in nodes.iter().enumerate() {
+            // An edge counts once for each of its endpoints, so self-loops count twice.
+            let expected_degree = expected_edges(edges, |source, _| source == node_number).count()
+                + expected_edges(edges, |_, target| target == node_number).count();
+            assert_eq!(
+                DirectedGraph::degree(&graph, node),
+                expected_degree,
+                "DirectedGraph::degree() did not return expected value for node {node_number}"
+            );
+        }
     }
 
     pub fn test_incoming_edges_inner<
@@ -624,46 +580,15 @@ pub mod __private_testing {
         G::EdgeId: Hash + Eq,
     {
         let (graph, nodes, edges) = create_test_graph(graph_constructor);
-        assert!(
-            DirectedGraph::incoming_edges(&graph, nodes[0])
-                .next()
-                .is_none(),
-            "DirectedGraph::incoming_edges() did not return an empty iterator for node 0"
-        );
-
-        let expected_edges_one = [edges[0]];
-        check_if_edges_match(
-            expected_edges_one,
-            DirectedGraph::incoming_edges(&graph, nodes[1]).map(|edge| edge.id),
-            "incoming_edges",
-            "DirectedGraph",
-            1,
-        );
-
-        let expected_edges_two = [edges[1], edges[3]];
-        check_if_edges_match(
-            expected_edges_two,
-            DirectedGraph::incoming_edges(&graph, nodes[2]).map(|edge| edge.id),
-            "incoming_edges",
-            "DirectedGraph",
-            2,
-        );
-
-        let expected_edges_three = [edges[2]];
-        check_if_edges_match(
-            expected_edges_three,
-            DirectedGraph::incoming_edges(&graph, nodes[3]).map(|edge| edge.id),
-            "incoming_edges",
-            "DirectedGraph",
-            3,
-        );
-
-        assert!(
-            DirectedGraph::incoming_edges(&graph, nodes[4])
-                .next()
-                .is_none(),
-            "DirectedGraph::incoming_edges() did not return an empty iterator for node 4"
-        );
+        for (node_number, &node) in nodes.iter().enumerate() {
+            check_if_edges_match(
+                expected_edges(edges, |_, target| target == node_number),
+                DirectedGraph::incoming_edges(&graph, node).map(|edge| edge.id),
+                "incoming_edges",
+                "DirectedGraph",
+                format_args!("node {node_number}"),
+            );
+        }
     }
 
     pub fn test_incoming_edges_mut_inner<
@@ -675,46 +600,15 @@ pub mod __private_testing {
         G::EdgeId: Hash + Eq,
     {
         let (mut graph, nodes, edges) = create_test_graph(graph_constructor);
-        assert!(
-            DirectedGraph::incoming_edges_mut(&mut graph, nodes[0])
-                .next()
-                .is_none(),
-            "DirectedGraph::incoming_edges_mut() did not return an empty iterator for node 0"
-        );
-
-        let expected_edges_one = [edges[0]];
-        check_if_edges_match(
-            expected_edges_one,
-            DirectedGraph::incoming_edges_mut(&mut graph, nodes[1]).map(|edge| edge.id),
-            "incoming_edges_mut",
-            "DirectedGraph",
-            1,
-        );
-
-        let expected_edges_two = [edges[1], edges[3]];
-        check_if_edges_match(
-            expected_edges_two,
-            DirectedGraph::incoming_edges_mut(&mut graph, nodes[2]).map(|edge| edge.id),
-            "incoming_edges_mut",
-            "DirectedGraph",
-            2,
-        );
-
-        let expected_edges_three = [edges[2]];
-        check_if_edges_match(
-            expected_edges_three,
-            DirectedGraph::incoming_edges_mut(&mut graph, nodes[3]).map(|edge| edge.id),
-            "incoming_edges_mut",
-            "DirectedGraph",
-            3,
-        );
-
-        assert!(
-            DirectedGraph::incoming_edges_mut(&mut graph, nodes[4])
-                .next()
-                .is_none(),
-            "DirectedGraph::incoming_edges_mut() did not return an empty iterator for node 4"
-        );
+        for (node_number, &node) in nodes.iter().enumerate() {
+            check_if_edges_match(
+                expected_edges(edges, |_, target| target == node_number),
+                DirectedGraph::incoming_edges_mut(&mut graph, node).map(|edge| edge.id),
+                "incoming_edges_mut",
+                "DirectedGraph",
+                format_args!("node {node_number}"),
+            );
+        }
     }
 
     pub fn test_outgoing_edges_inner<
@@ -726,46 +620,15 @@ pub mod __private_testing {
         G::EdgeId: Hash + Eq,
     {
         let (graph, nodes, edges) = create_test_graph(graph_constructor);
-        let expected_edges_zero = [edges[0], edges[1]];
-        check_if_edges_match(
-            expected_edges_zero,
-            DirectedGraph::outgoing_edges(&graph, nodes[0]).map(|edge| edge.id),
-            "outgoing_edges",
-            "DirectedGraph",
-            0,
-        );
-
-        let expected_edges_one = [edges[2]];
-        check_if_edges_match(
-            expected_edges_one,
-            DirectedGraph::outgoing_edges(&graph, nodes[1]).map(|edge| edge.id),
-            "outgoing_edges",
-            "DirectedGraph",
-            1,
-        );
-
-        assert!(
-            DirectedGraph::outgoing_edges(&graph, nodes[2])
-                .next()
-                .is_none(),
-            "DirectedGraph::outgoing_edges() did not return an empty iterator for node 2"
-        );
-
-        let expected_edges_three = [edges[3]];
-        check_if_edges_match(
-            expected_edges_three,
-            DirectedGraph::outgoing_edges(&graph, nodes[3]).map(|edge| edge.id),
-            "outgoing_edges",
-            "DirectedGraph",
-            3,
-        );
-
-        assert!(
-            DirectedGraph::outgoing_edges(&graph, nodes[4])
-                .next()
-                .is_none(),
-            "DirectedGraph::outgoing_edges() did not return an empty iterator for node 4"
-        );
+        for (node_number, &node) in nodes.iter().enumerate() {
+            check_if_edges_match(
+                expected_edges(edges, |source, _| source == node_number),
+                DirectedGraph::outgoing_edges(&graph, node).map(|edge| edge.id),
+                "outgoing_edges",
+                "DirectedGraph",
+                format_args!("node {node_number}"),
+            );
+        }
     }
 
     pub fn test_outgoing_edges_mut_inner<
@@ -777,46 +640,15 @@ pub mod __private_testing {
         G::EdgeId: Hash + Eq,
     {
         let (mut graph, nodes, edges) = create_test_graph(graph_constructor);
-        let expected_edges_zero = [edges[0], edges[1]];
-        check_if_edges_match(
-            expected_edges_zero,
-            DirectedGraph::outgoing_edges_mut(&mut graph, nodes[0]).map(|edge| edge.id),
-            "outgoing_edges_mut",
-            "DirectedGraph",
-            0,
-        );
-
-        let expected_edges_one = [edges[2]];
-        check_if_edges_match(
-            expected_edges_one,
-            DirectedGraph::outgoing_edges_mut(&mut graph, nodes[1]).map(|edge| edge.id),
-            "outgoing_edges_mut",
-            "DirectedGraph",
-            1,
-        );
-
-        assert!(
-            DirectedGraph::outgoing_edges_mut(&mut graph, nodes[2])
-                .next()
-                .is_none(),
-            "DirectedGraph::outgoing_edges_mut() did not return an empty iterator for node 2"
-        );
-
-        let expected_edges_three = [edges[3]];
-        check_if_edges_match(
-            expected_edges_three,
-            DirectedGraph::outgoing_edges_mut(&mut graph, nodes[3]).map(|edge| edge.id),
-            "outgoing_edges_mut",
-            "DirectedGraph",
-            3,
-        );
-
-        assert!(
-            DirectedGraph::outgoing_edges_mut(&mut graph, nodes[4])
-                .next()
-                .is_none(),
-            "DirectedGraph::outgoing_edges_mut() did not return an empty iterator for node 4"
-        );
+        for (node_number, &node) in nodes.iter().enumerate() {
+            check_if_edges_match(
+                expected_edges(edges, |source, _| source == node_number),
+                DirectedGraph::outgoing_edges_mut(&mut graph, node).map(|edge| edge.id),
+                "outgoing_edges_mut",
+                "DirectedGraph",
+                format_args!("node {node_number}"),
+            );
+        }
     }
 
     pub fn test_incident_edges_inner<
@@ -828,48 +660,17 @@ pub mod __private_testing {
         G::EdgeId: Hash + Eq,
     {
         let (graph, nodes, edges) = create_test_graph(graph_constructor);
-        let expected_edges_zero = [edges[0], edges[1]];
-        check_if_edges_match(
-            expected_edges_zero,
-            DirectedGraph::incident_edges(&graph, nodes[0]).map(|edge| edge.id),
-            "incident_edges",
-            "DirectedGraph",
-            0,
-        );
-
-        let expected_edges_one = [edges[0], edges[2]];
-        check_if_edges_match(
-            expected_edges_one,
-            DirectedGraph::incident_edges(&graph, nodes[1]).map(|edge| edge.id),
-            "incident_edges",
-            "DirectedGraph",
-            1,
-        );
-
-        let expected_edges_two = [edges[1], edges[3]];
-        check_if_edges_match(
-            expected_edges_two,
-            DirectedGraph::incident_edges(&graph, nodes[2]).map(|edge| edge.id),
-            "incident_edges",
-            "DirectedGraph",
-            2,
-        );
-
-        let expected_edges_three = [edges[2], edges[3]];
-        check_if_edges_match(
-            expected_edges_three,
-            DirectedGraph::incident_edges(&graph, nodes[3]).map(|edge| edge.id),
-            "incident_edges",
-            "DirectedGraph",
-            3,
-        );
-
-        assert!(
-            DirectedGraph::incident_edges(&graph, nodes[4])
-                .next()
-                .is_none(),
-            "DirectedGraph::incident_edges() did not return an empty iterator for node 4"
-        );
+        for (node_number, &node) in nodes.iter().enumerate() {
+            check_if_edges_match(
+                expected_edges(edges, |source, target| {
+                    source == node_number || target == node_number
+                }),
+                DirectedGraph::incident_edges(&graph, node).map(|edge| edge.id),
+                "incident_edges",
+                "DirectedGraph",
+                format_args!("node {node_number}"),
+            );
+        }
     }
 
     pub fn test_incident_edges_mut_inner<
@@ -881,48 +682,17 @@ pub mod __private_testing {
         G::EdgeId: Hash + Eq,
     {
         let (mut graph, nodes, edges) = create_test_graph(graph_constructor);
-        let expected_edges_zero = [edges[0], edges[1]];
-        check_if_edges_match(
-            expected_edges_zero,
-            DirectedGraph::incident_edges_mut(&mut graph, nodes[0]).map(|edge| edge.id),
-            "incident_edges_mut",
-            "DirectedGraph",
-            0,
-        );
-
-        let expected_edges_one = [edges[0], edges[2]];
-        check_if_edges_match(
-            expected_edges_one,
-            DirectedGraph::incident_edges_mut(&mut graph, nodes[1]).map(|edge| edge.id),
-            "incident_edges_mut",
-            "DirectedGraph",
-            1,
-        );
-
-        let expected_edges_two = [edges[1], edges[3]];
-        check_if_edges_match(
-            expected_edges_two,
-            DirectedGraph::incident_edges_mut(&mut graph, nodes[2]).map(|edge| edge.id),
-            "incident_edges_mut",
-            "DirectedGraph",
-            2,
-        );
-
-        let expected_edges_three = [edges[2], edges[3]];
-        check_if_edges_match(
-            expected_edges_three,
-            DirectedGraph::incident_edges_mut(&mut graph, nodes[3]).map(|edge| edge.id),
-            "incident_edges_mut",
-            "DirectedGraph",
-            3,
-        );
-
-        assert!(
-            DirectedGraph::incident_edges_mut(&mut graph, nodes[4])
-                .next()
-                .is_none(),
-            "DirectedGraph::incident_edges_mut() did not return an empty iterator for node 4"
-        );
+        for (node_number, &node) in nodes.iter().enumerate() {
+            check_if_edges_match(
+                expected_edges(edges, |source, target| {
+                    source == node_number || target == node_number
+                }),
+                DirectedGraph::incident_edges_mut(&mut graph, node).map(|edge| edge.id),
+                "incident_edges_mut",
+                "DirectedGraph",
+                format_args!("node {node_number}"),
+            );
+        }
     }
 
     pub fn test_predecessors_inner<
@@ -1076,7 +846,6 @@ pub mod __private_testing {
         );
     }
 
-    #[allow(clippy::too_many_lines)]
     pub fn test_edges_between_inner<
         G: DirectedGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = ()>,
     >(
@@ -1087,18 +856,12 @@ pub mod __private_testing {
     {
         let (graph, nodes, edges) = create_test_graph(graph_constructor);
 
-        let expected_edge_matrix = [
-            [None, Some(edges[0]), Some(edges[1]), None, None],
-            [None, None, None, Some(edges[2]), None],
-            [None, None, None, None, None],
-            [None, None, Some(edges[3]), None, None],
-            [None, None, None, None, None],
-        ];
-
         for lhs_number in 0..nodes.len() {
             for rhs_number in 0..nodes.len() {
                 check_if_edges_match(
-                    expected_edge_matrix[lhs_number][rhs_number],
+                    expected_edges(edges, |source, target| {
+                        (source, target) == (lhs_number, rhs_number)
+                    }),
                     DirectedGraph::edges_between(&graph, nodes[lhs_number], nodes[rhs_number])
                         .map(|edge| edge.id),
                     "edges_between",
@@ -1109,7 +872,6 @@ pub mod __private_testing {
         }
     }
 
-    #[allow(clippy::too_many_lines)]
     pub fn test_edges_between_mut_inner<
         G: DirectedGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = ()>,
     >(
@@ -1120,18 +882,12 @@ pub mod __private_testing {
     {
         let (mut graph, nodes, edges) = create_test_graph(graph_constructor);
 
-        let expected_edge_matrix = [
-            [None, Some(edges[0]), Some(edges[1]), None, None],
-            [None, None, None, Some(edges[2]), None],
-            [None, None, None, None, None],
-            [None, None, Some(edges[3]), None, None],
-            [None, None, None, None, None],
-        ];
-
         for lhs_number in 0..nodes.len() {
             for rhs_number in 0..nodes.len() {
                 check_if_edges_match(
-                    expected_edge_matrix[lhs_number][rhs_number],
+                    expected_edges(edges, |source, target| {
+                        (source, target) == (lhs_number, rhs_number)
+                    }),
                     DirectedGraph::edges_between_mut(
                         &mut graph,
                         nodes[lhs_number],
@@ -1146,7 +902,6 @@ pub mod __private_testing {
         }
     }
 
-    #[allow(clippy::too_many_lines)]
     pub fn test_edges_connecting_inner<
         G: DirectedGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = ()>,
     >(
@@ -1157,18 +912,13 @@ pub mod __private_testing {
     {
         let (graph, nodes, edges) = create_test_graph(graph_constructor);
 
-        let expected_edge_matrix = [
-            [None, Some(edges[0]), Some(edges[1]), None, None],
-            [Some(edges[0]), None, None, Some(edges[2]), None],
-            [Some(edges[1]), None, None, Some(edges[3]), None],
-            [None, Some(edges[2]), Some(edges[3]), None, None],
-            [None, None, None, None, None],
-        ];
-
         for lhs_number in 0..nodes.len() {
             for rhs_number in 0..nodes.len() {
                 check_if_edges_match(
-                    expected_edge_matrix[lhs_number][rhs_number],
+                    expected_edges(edges, |source, target| {
+                        (source, target) == (lhs_number, rhs_number)
+                            || (target, source) == (lhs_number, rhs_number)
+                    }),
                     DirectedGraph::edges_connecting(&graph, nodes[lhs_number], nodes[rhs_number])
                         .map(|edge| edge.id),
                     "edges_connecting",
@@ -1179,7 +929,6 @@ pub mod __private_testing {
         }
     }
 
-    #[allow(clippy::too_many_lines)]
     pub fn test_edges_connecting_mut_inner<
         G: DirectedGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = ()>,
     >(
@@ -1190,18 +939,13 @@ pub mod __private_testing {
     {
         let (mut graph, nodes, edges) = create_test_graph(graph_constructor);
 
-        let expected_edge_matrix = [
-            [None, Some(edges[0]), Some(edges[1]), None, None],
-            [Some(edges[0]), None, None, Some(edges[2]), None],
-            [Some(edges[1]), None, None, Some(edges[3]), None],
-            [None, Some(edges[2]), Some(edges[3]), None, None],
-            [None, None, None, None, None],
-        ];
-
         for lhs_number in 0..nodes.len() {
             for rhs_number in 0..nodes.len() {
                 check_if_edges_match(
-                    expected_edge_matrix[lhs_number][rhs_number],
+                    expected_edges(edges, |source, target| {
+                        (source, target) == (lhs_number, rhs_number)
+                            || (target, source) == (lhs_number, rhs_number)
+                    }),
                     DirectedGraph::edges_connecting_mut(
                         &mut graph,
                         nodes[lhs_number],
@@ -1272,12 +1016,8 @@ pub mod __private_testing {
     ) {
         let (graph, nodes, _) = create_test_graph(graph_constructor);
 
-        let adjacent_node_pairs = [
-            (nodes[0], nodes[1]),
-            (nodes[0], nodes[2]),
-            (nodes[1], nodes[3]),
-            (nodes[3], nodes[2]),
-        ];
+        let adjacent_node_pairs =
+            TEST_GRAPH_EDGE_ENDPOINTS.map(|(source, target)| (nodes[source], nodes[target]));
 
         for source in &nodes {
             for target in &nodes {
