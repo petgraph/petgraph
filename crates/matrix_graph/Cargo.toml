@@ -8,7 +8,7 @@ repository.workspace   = true
 rust-version.workspace = true
 
 [dependencies]
-petgraph-core = { workspace = true }
+petgraph-core = { workspace = true, features = ["alloc"] }
 
 fixedbitset = { workspace = true }
 slab = { workspace = true }
