@@ -1,10 +1,6 @@
 /// Generates a suite of tests for [`StorableGraph`][crate::graph::storable::StorableGraph]
 /// implementations, which are also [`DirectedGraph`][crate::graph::DirectedGraph]s.
 ///
-/// The ids of the nodes and edges remaining after removing a node are obtained using
-/// [`DirectedGraph::nodes`][crate::graph::DirectedGraph::nodes] and
-/// [`DirectedGraph::edges`][crate::graph::DirectedGraph::edges].
-///
 /// For the expected invariants and the arguments of this macro, see
 /// [`__test_storable_graph_inner`][crate::__test_storable_graph_inner].
 ///
@@ -26,10 +22,6 @@ macro_rules! test_directed_storable_graph {
 
 /// Generates a suite of tests for [`StorableGraph`][crate::graph::storable::StorableGraph]
 /// implementations, which are also [`UndirectedGraph`][crate::graph::UndirectedGraph]s.
-///
-/// The ids of the nodes and edges remaining after removing a node are obtained using
-/// [`UndirectedGraph::nodes`][crate::graph::UndirectedGraph::nodes] and
-/// [`UndirectedGraph::edges`][crate::graph::UndirectedGraph::edges].
 ///
 /// For the expected invariants and the arguments of this macro, see
 /// [`__test_storable_graph_inner`][crate::__test_storable_graph_inner].
@@ -53,15 +45,12 @@ macro_rules! test_undirected_storable_graph {
 /// Generates a suite of tests for [`StorableGraph`][crate::graph::storable::StorableGraph]
 /// implementations.
 ///
-/// One test is generated for each method in the
+/// At least one test is generated for each method in the
 /// [`StorableGraph`][crate::graph::storable::StorableGraph] trait, which checks every method of the
 /// returned [`VisitContainer`][crate::graph::storable::VisitContainer] or
-/// [`DataContainer`][crate::graph::storable::DataContainer]. An additional test checks that
-/// containers created after nodes and edges were removed and added still work for all nodes and
-/// edges in the graph. Another test checks that the containers have sufficient capacity for all
-/// nodes and edges in the graph, even if the largest ids are not smaller than the number of nodes
-/// and edges, as is the case for graphs with stable ids after removing the oldest node. The
-/// following invariants are expected from the graph implementation:
+/// [`DataContainer`][crate::graph::storable::DataContainer].
+///
+/// The following invariants are expected from the graph implementation:
 /// - If the most recently added node or edge is removed, its ID will no longer be valid.
 /// - Removing the most recently added node or edge does not change the IDs of any other nodes or
 ///   edges.
@@ -75,7 +64,7 @@ macro_rules! test_undirected_storable_graph {
 /// - `$edge_ids`: `fn(&G) -> Vec<G::EdgeId>`. Returns the ids of all edges in the graph.
 ///
 /// Prefer using [`test_directed_storable_graph`][crate::test_directed_storable_graph] or
-/// [`test_undirected_storable_graph`][crate::test_undirected_storable_graph] instead.
+/// [`test_undirected_storable_graph`][crate::test_undirected_storable_graph] directly instead.
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __test_storable_graph_inner {

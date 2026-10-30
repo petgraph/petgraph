@@ -1,12 +1,6 @@
 /// Generates a suite of tests for [`EditableGraph`][crate::graph::EditableGraph] implementations,
 /// which are also [`DirectedGraph`][crate::graph::DirectedGraph]s.
 ///
-/// The effects of the [`EditableGraph`][crate::graph::EditableGraph] methods are checked using
-/// [`DirectedGraph::contains_node`][crate::graph::DirectedGraph::contains_node],
-/// [`DirectedGraph::contains_edge`][crate::graph::DirectedGraph::contains_edge],
-/// [`DirectedGraph::node_count`][crate::graph::DirectedGraph::node_count] and
-/// [`DirectedGraph::edge_count`][crate::graph::DirectedGraph::edge_count].
-///
 /// For the expected invariants and the arguments of this macro, see
 /// [`__test_editable_graph_inner`][crate::__test_editable_graph_inner].
 ///
@@ -28,12 +22,6 @@ macro_rules! test_directed_editable_graph {
 /// Generates a suite of tests for [`EditableGraph`][crate::graph::EditableGraph] implementations,
 /// which are also [`UndirectedGraph`][crate::graph::UndirectedGraph]s.
 ///
-/// The effects of the [`EditableGraph`][crate::graph::EditableGraph] methods are checked using
-/// [`UndirectedGraph::contains_node`][crate::graph::UndirectedGraph::contains_node],
-/// [`UndirectedGraph::contains_edge`][crate::graph::UndirectedGraph::contains_edge],
-/// [`UndirectedGraph::node_count`][crate::graph::UndirectedGraph::node_count] and
-/// [`UndirectedGraph::edge_count`][crate::graph::UndirectedGraph::edge_count].
-///
 /// For the expected invariants and the arguments of this macro, see
 /// [`__test_editable_graph_inner`][crate::__test_editable_graph_inner].
 ///
@@ -54,9 +42,10 @@ macro_rules! test_undirected_editable_graph {
 
 /// Generates a suite of tests for [`EditableGraph`][crate::graph::EditableGraph] implementations.
 ///
-/// One or more tests are generated for each method in the
-/// [`EditableGraph`][crate::graph::EditableGraph] trait. The following invariants are expected
-/// from the graph implementation:
+/// At least one test is generated for each method in the
+/// [`EditableGraph`][crate::graph::EditableGraph] trait.
+///
+/// The following invariants are expected from the graph implementation:
 /// - If the most recently added node or edge is removed, its ID will no longer be valid. I.e.,
 ///   calling methods with that ID should return `None`, an error, or otherwise indicate
 ///   non-existence.

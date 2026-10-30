@@ -1,8 +1,9 @@
 /// Generates a suite of tests for [`UndirectedGraph`][crate::graph::UndirectedGraph]
 /// implementations.
 ///
-/// One test is generated for each method in the [`UndirectedGraph`][crate::graph::UndirectedGraph]
-/// trait. The following invariants are expected from the graph implementation:
+/// At least one test is generated for each method in the
+/// [`UndirectedGraph`][crate::graph::UndirectedGraph] trait. The following invariants are expected
+/// from the graph implementation:
 /// - If the most recently added node or edge is removed, its ID will no longer be valid. I.e.,
 ///   calling methods with that ID should return `None` or otherwise indicate non-existence.
 ///
