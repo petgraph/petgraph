@@ -182,7 +182,7 @@ pub mod __private_testing {
         graph::EditableGraph,
         utils::testing::{
             TEST_GRAPH_EDGE_COUNT, TEST_GRAPH_EDGE_ENDPOINTS, TEST_GRAPH_NODE_COUNT,
-            create_test_graph,
+            create_test_graph, expected_edges,
         },
     };
 
@@ -437,16 +437,17 @@ pub mod __private_testing {
         );
 
         // Node ids might not be stable here, so only the counts are checked.
-        let (mut graph, nodes, _) = create_test_graph(graph_constructor);
+        let (mut graph, nodes, edges) = create_test_graph(graph_constructor);
         graph.remove_node(nodes[0]).unwrap();
         assert_eq!(
             node_count(&graph),
             TEST_GRAPH_NODE_COUNT - 1,
             "{graph_type}::node_count() did not match expected value after removing node 0"
         );
+
         assert_eq!(
             edge_count(&graph),
-            TEST_GRAPH_EDGE_COUNT - 2,
+            expected_edges(edges, |source, target| source != 0 && target != 0).count(),
             "{graph_type}::edge_count() did not match expected value after removing node 0"
         );
     }

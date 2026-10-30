@@ -24,10 +24,10 @@ pub mod __common {
     ///
     /// The graph looks as follows:
     /// ```text
-    /// 0 --> 1
+    /// 0 ---> 1
     /// |      |
     /// v      v
-    /// 2 <----3     4
+    /// 2 <--- 3     4
     /// ```
     /// The graphs directionality is determined by the graph type `G` passed to the function. The
     /// edges are added with the directionality shown in the diagram above.

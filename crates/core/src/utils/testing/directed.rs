@@ -272,7 +272,7 @@ pub mod __private_testing {
     >(
         graph_constructor: fn() -> G,
     ) {
-        let (mut graph, nodes, _) = create_test_graph(graph_constructor);
+        let (mut graph, nodes, edges) = create_test_graph(graph_constructor);
         assert_eq!(
             DirectedGraph::node_count(&graph),
             TEST_GRAPH_NODE_COUNT,
@@ -300,9 +300,10 @@ pub mod __private_testing {
             TEST_GRAPH_NODE_COUNT - 1,
             "DirectedGraph::node_count() did not match expected value after removing node 0"
         );
+
         assert_eq!(
             DirectedGraph::edge_count(&graph),
-            TEST_GRAPH_EDGE_COUNT - 2,
+            expected_edges(edges, |source, target| source != 0 && target != 0).count(),
             "DirectedGraph::edge_count() did not match expected value after removing node 0"
         );
     }
