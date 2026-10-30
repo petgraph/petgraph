@@ -159,16 +159,28 @@ fn extend_flat_square_matrix<T: Default>(
         new_node_capacity
     } else {
         const MIN_CAPACITY: usize = 4;
-        cmp::max(new_node_capacity.next_power_of_two(), MIN_CAPACITY)
+        cmp::max(
+            new_node_capacity
+                .checked_next_power_of_two()
+                .unwrap_or_else(|| panic!("Matrix capacity overflow")),
+            MIN_CAPACITY,
+        )
     };
 
     // Optimization: when resizing the matrix this way we skip the first few grows to make
     // small matrices a bit faster to work with.
 
-    node_adjacencies.resize_with(new_node_capacity.pow(2), || T::default());
+    node_adjacencies.resize_with(
+        new_node_capacity
+            .checked_pow(2)
+            .unwrap_or_else(|| panic!("Matrix capacity overflow")),
+        || T::default(),
+    );
     for current in (1..old_node_capacity).rev() {
         let pos = current * old_node_capacity;
-        let new_pos = current * new_node_capacity;
+        let new_pos = current
+            .checked_mul(new_node_capacity)
+            .unwrap_or_else(|| panic!("Matrix capacity overflow"));
         // Move the slices directly if they do not overlap with their new position
         if pos + old_node_capacity <= new_pos {
             debug_assert!(pos + old_node_capacity < node_adjacencies.len());
@@ -1069,6 +1081,26 @@ mod tests {
 
         assert_eq!(graph.node_count(), 0);
         assert_eq!(graph.edge_count(), 0);
+    }
+
+    #[test]
+    #[should_panic = "capacity overflow"]
+    fn test_overflow_vec() {
+        let _ = MatrixGraph::<(), (), Directed, Option<()>>::with_capacity(usize::MAX);
+    }
+
+    #[test]
+    #[should_panic = "Matrix capacity overflow"]
+    fn test_overflow_node() {
+        let mut graph = MatrixGraph::<(), (), Directed, Option<()>>::default();
+        graph.extend_capacity_for_node(usize::MAX, false);
+    }
+
+    #[test]
+    #[should_panic = "Matrix capacity overflow"]
+    fn test_overflow_edge() {
+        let mut graph = MatrixGraph::<(), (), Directed, Option<()>>::default();
+        graph.extend_capacity_for_edge(MatrixGraphNodeId(usize::MAX), MatrixGraphNodeId(0));
     }
 
     #[test]

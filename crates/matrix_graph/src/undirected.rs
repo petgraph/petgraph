@@ -151,6 +151,10 @@ fn extend_lower_triangular_matrix<T: Default>(
     new_capacity: usize,
 ) -> usize {
     let max_node = new_capacity - 1;
+    let _overflow_check = max_node
+        .checked_mul(max_node + 1)
+        .unwrap_or_else(|| panic!("Matrix capacity overflow"));
+
     let max_pos = to_lower_triangular_matrix_position(max_node, max_node);
     node_adjacencies.resize_with(max_pos + 1, || T::default());
     new_capacity
@@ -753,6 +757,26 @@ mod tests {
 
         assert_eq!(graph.node_count(), 0);
         assert_eq!(graph.edge_count(), 0);
+    }
+
+    #[test]
+    #[should_panic = "capacity overflow"]
+    fn test_overflow_vec() {
+        let _ = MatrixGraph::<(), (), Undirected, Option<()>>::with_capacity(usize::MAX);
+    }
+
+    #[test]
+    #[should_panic = "Matrix capacity overflow"]
+    fn test_overflow_node() {
+        let mut graph = MatrixGraph::<(), (), Undirected, Option<()>>::default();
+        graph.extend_capacity_for_node(usize::MAX, false);
+    }
+
+    #[test]
+    #[should_panic = "Matrix capacity overflow"]
+    fn test_overflow_edge() {
+        let mut graph = MatrixGraph::<(), (), Undirected, Option<()>>::default();
+        graph.extend_capacity_for_edge(MatrixGraphNodeId(usize::MAX), MatrixGraphNodeId(0));
     }
 
     #[test]
