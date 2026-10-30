@@ -289,8 +289,12 @@ impl<N, E> EditableGraph for DirectedTestGraph<N, E, DirNodeId, DirEdgeId> {
     }
 }
 
-use crate::{test_directed_editable_graph, test_directed_graph, test_directed_storable_graph};
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{test_directed_editable_graph, test_directed_graph, test_directed_storable_graph};
 
-test_directed_graph!(DirectedTestGraph::<(), (), DirNodeId, DirEdgeId>::new,);
-test_directed_editable_graph!(DirectedTestGraph::<(), (), DirNodeId, DirEdgeId>::new,);
-test_directed_storable_graph!(DirectedTestGraph::<(), (), DirNodeId, DirEdgeId>::new,);
+    test_directed_graph!(DirectedTestGraph::<(), (), DirNodeId, DirEdgeId>::new,);
+    test_directed_editable_graph!(DirectedTestGraph::<(), (), DirNodeId, DirEdgeId>::new,);
+    test_directed_storable_graph!(DirectedTestGraph::<(), (), DirNodeId, DirEdgeId>::new,);
+}
