@@ -22,11 +22,13 @@ use slab::Slab;
 
 use crate::private::Sealed;
 
-mod directed;
+pub(crate) mod directed;
 mod undirected;
+mod undirected_full_matrix;
 
 pub use directed::{DiMatrixEdgeId, DiMatrixGraph};
 pub use undirected::{UnMatrixEdgeId, UnMatrixGraph};
+pub use undirected_full_matrix::{UnMatrixFullEdgeId, UnMatrixGraphFull};
 
 /// `NodeIds` type for the [`Graph`] implementation of [`MatrixGraph`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]

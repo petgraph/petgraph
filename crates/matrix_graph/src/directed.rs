@@ -19,7 +19,7 @@ use crate::{
 /// A [`MatrixGraph`] with directed edges.
 pub type DiMatrixGraph<N, E, Null = Option<E>> = MatrixGraph<N, E, Directed, Null>;
 
-/// Edge identifier type for a directed [`MatrixGraph`].
+/// Edge identifier type for a [`DiMatrixGraph`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct DiMatrixEdgeId {
     pub source: MatrixGraphNodeId,
@@ -141,13 +141,17 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>> MatrixGraphExtras<N> for DiMatrixGra
 }
 
 #[inline]
-const fn to_flat_square_matrix_position(row: usize, column: usize, width: usize) -> usize {
+pub(crate) const fn to_flat_square_matrix_position(
+    row: usize,
+    column: usize,
+    width: usize,
+) -> usize {
     row * width + column
 }
 
 // TODO: Double check this function
 #[inline]
-fn extend_flat_square_matrix<T: Default>(
+pub(crate) fn extend_flat_square_matrix<T: Default>(
     node_adjacencies: &mut Vec<T>,
     old_node_capacity: usize,
     new_node_capacity: usize,

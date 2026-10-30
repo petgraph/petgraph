@@ -19,7 +19,7 @@ use crate::{
 /// A [`MatrixGraph`] with undirected edges.
 pub type UnMatrixGraph<N, E, Null = Option<E>> = MatrixGraph<N, E, Undirected, Null>;
 
-/// Edge identifier type for an undirected [`MatrixGraph`].
+/// Edge identifier type for an [`UnMatrixGraph`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct UnMatrixEdgeId {
     pub source: MatrixGraphNodeId,
