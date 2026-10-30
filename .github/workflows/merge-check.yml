@@ -62,6 +62,8 @@ jobs:
         run: rm -f rust-toolchain.toml rustup-toolchain.toml
       - name: Install nightly toolchain
         uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: miri
       - name: Install cargo-nextest
         uses: taiki-e/install-action@v2
         with:
