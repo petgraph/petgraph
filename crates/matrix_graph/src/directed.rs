@@ -1239,33 +1239,7 @@ mod tests {
         );
     }
 
-    fn add_node(graph: &mut MatrixGraph<(), (), Directed, Option<()>>, _: ()) -> MatrixGraphNodeId {
-        graph.add_node(()).unwrap()
-    }
-
-    fn remove_node(graph: &mut MatrixGraph<(), (), Directed, Option<()>>, node: MatrixGraphNodeId) {
-        EditableGraph::remove_node(graph, node).unwrap();
-    }
-
-    fn add_edge_unwrap(
-        graph: &mut MatrixGraph<(), (), Directed, Option<()>>,
-        source: MatrixGraphNodeId,
-        target: MatrixGraphNodeId,
-        _: (),
-    ) -> DiMatrixEdgeId {
-        graph.add_edge(source, target, ()).unwrap();
-        DiMatrixEdgeId::new(source, target)
-    }
-
-    fn remove_edge(graph: &mut MatrixGraph<(), (), Directed, Option<()>>, edge_id: DiMatrixEdgeId) {
-        graph.remove_edge(edge_id).unwrap();
-    }
-
     test_directed_graph!(
         MatrixGraph::<(), (), Directed, Option<()>>::new_directed,
-        add_node,
-        remove_node,
-        add_edge_unwrap,
-        remove_edge
     );
 }
