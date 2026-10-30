@@ -173,7 +173,7 @@ impl<T: Zeroable> NicheWrapper for NotZero<T> {
     fn as_ref(&self) -> Option<&Self::Wrapped> {
         if self.is_null() { None } else { Some(&self.0) }
     }
-
+    
     #[doc(hidden)]
     fn as_mut(&mut self) -> Option<&mut Self::Wrapped> {
         if self.is_null() {
