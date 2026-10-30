@@ -111,3 +111,31 @@ jobs:
 
       - name: Check
         run: just check-no-std
+
+  miri:
+    name: Miri
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+      # Remove repo toolchain pin so we can specify toolchain manually
+      - name: Remove toolchain pin
+        run: rm -f rust-toolchain.toml rustup-toolchain.toml
+      - name: Setup just
+        uses: taiki-e/install-action@v2
+        with:
+          tool: just
+      - name: Install nightly toolchain
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: miri
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-nextest
+
+      - name: Build caching
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run miri
+        run: just miri

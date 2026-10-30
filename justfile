@@ -12,7 +12,7 @@ test:
 
 # Miri with all tests (this might take very long)
 miri:
-    cargo miri nextest run
+    cargo +nightly miri nextest run --all-features
 
 # Fmt with the same configuration as in CI
 fmt:
