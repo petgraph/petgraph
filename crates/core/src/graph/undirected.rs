@@ -69,9 +69,12 @@ pub trait UndirectedGraph: Graph {
     }
 
     // Degree
+    // Counts self-loops twice
     #[inline]
     fn degree(&self, node: Self::NodeId) -> usize {
-        self.incident_edges(node).count()
+        self.incident_edges(node)
+            .map(|edge| if edge.source == edge.target { 2 } else { 1 })
+            .sum()
     }
 
     // Incidence

@@ -80,6 +80,7 @@ pub trait DirectedGraph: Graph {
         self.outgoing_edges(node).count()
     }
 
+    // Counts self-loops twice
     #[inline]
     fn degree(&self, node: Self::NodeId) -> usize {
         self.in_degree(node) + self.out_degree(node)
