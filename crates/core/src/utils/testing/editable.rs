@@ -167,13 +167,7 @@ macro_rules! __test_editable_graph_inner {
 // part of the public API. It is subject to change at any time.
 #[doc(hidden)]
 pub mod __private_testing {
-    use crate::{
-        graph::EditableGraph,
-        utils::testing::{
-            TEST_GRAPH_EDGE_COUNT, TEST_GRAPH_EDGE_ENDPOINTS, TEST_GRAPH_NODE_COUNT,
-            create_test_graph, expected_edges,
-        },
-    };
+    use crate::{graph::EditableGraph, utils::testing::DEFAULT_TEST_GRAPH};
 
     /// Asserts that all given nodes are contained in the graph.
     fn assert_contains_nodes<G: EditableGraph>(
@@ -221,7 +215,7 @@ pub mod __private_testing {
             "{graph_type}::node_count() did not return 0 for a newly constructed graph"
         );
 
-        let mut nodes = [None; TEST_GRAPH_NODE_COUNT];
+        let mut nodes = [None; DEFAULT_TEST_GRAPH.node_count];
         for index in 0..nodes.len() {
             let node = graph
                 .add_node(())
@@ -270,11 +264,11 @@ pub mod __private_testing {
         edge_count: fn(&G) -> usize,
     ) {
         let mut graph = graph_constructor();
-        let nodes: [G::NodeId; TEST_GRAPH_NODE_COUNT] =
+        let nodes: [G::NodeId; DEFAULT_TEST_GRAPH.node_count] =
             core::array::from_fn(|_| graph.add_node(()).unwrap());
 
-        let mut edges = [None; TEST_GRAPH_EDGE_COUNT];
-        for (index, &(source, target)) in TEST_GRAPH_EDGE_ENDPOINTS.iter().enumerate() {
+        let mut edges = [None; DEFAULT_TEST_GRAPH.edge_count()];
+        for (index, &(source, target)) in DEFAULT_TEST_GRAPH.edge_endpoints.iter().enumerate() {
             let edge = graph
                 .add_edge(nodes[source], nodes[target], ())
                 .expect("EditableGraph::add_edge() returned an error for existing nodes");
@@ -315,7 +309,7 @@ pub mod __private_testing {
         );
         assert_eq!(
             node_count(&graph),
-            TEST_GRAPH_NODE_COUNT,
+            DEFAULT_TEST_GRAPH.node_count,
             "{graph_type}::node_count() changed after adding edges"
         );
     }
@@ -328,7 +322,7 @@ pub mod __private_testing {
         contains_edge: fn(&G, G::EdgeId) -> bool,
         edge_count: fn(&G) -> usize,
     ) {
-        let (mut graph, nodes, edges) = create_test_graph(graph_constructor);
+        let (mut graph, nodes, edges) = DEFAULT_TEST_GRAPH.build(graph_constructor);
 
         // The newest node is removed, as some graph implementations might not have stable node
         // ids, but the newest node added is likely to be removable without another node taking
@@ -347,7 +341,7 @@ pub mod __private_testing {
 
         assert_eq!(
             edge_count(&graph),
-            TEST_GRAPH_EDGE_COUNT,
+            DEFAULT_TEST_GRAPH.edge_count(),
             "{graph_type}::edge_count() changed after failing to add edges"
         );
         assert_contains_edges(
@@ -367,7 +361,7 @@ pub mod __private_testing {
         node_count: fn(&G) -> usize,
         edge_count: fn(&G) -> usize,
     ) {
-        let (mut graph, nodes, edges) = create_test_graph(graph_constructor);
+        let (mut graph, nodes, edges) = DEFAULT_TEST_GRAPH.build(graph_constructor);
 
         // The newest node and edges are removed, as some graph implementations might not have
         // stable ids, but the newest node and edges added are likely to be removable without
@@ -396,12 +390,12 @@ pub mod __private_testing {
         );
         assert_eq!(
             node_count(&graph),
-            TEST_GRAPH_NODE_COUNT,
+            DEFAULT_TEST_GRAPH.node_count,
             "{graph_type}::node_count() did not match expected value after removing a node"
         );
         assert_eq!(
             edge_count(&graph),
-            TEST_GRAPH_EDGE_COUNT,
+            DEFAULT_TEST_GRAPH.edge_count(),
             "{graph_type}::edge_count() did not match expected value after removing a node with \
              incident edges"
         );
@@ -426,17 +420,19 @@ pub mod __private_testing {
         );
 
         // Node ids might not be stable here, so only the counts are checked.
-        let (mut graph, nodes, edges) = create_test_graph(graph_constructor);
+        let (mut graph, nodes, edges) = DEFAULT_TEST_GRAPH.build(graph_constructor);
         graph.remove_node(nodes[0]).unwrap();
         assert_eq!(
             node_count(&graph),
-            TEST_GRAPH_NODE_COUNT - 1,
+            DEFAULT_TEST_GRAPH.node_count - 1,
             "{graph_type}::node_count() did not match expected value after removing node 0"
         );
 
         assert_eq!(
             edge_count(&graph),
-            expected_edges(edges, |source, target| source != 0 && target != 0).count(),
+            DEFAULT_TEST_GRAPH
+                .expected_edges(&edges, |source, target| source != 0 && target != 0)
+                .count(),
             "{graph_type}::edge_count() did not match expected value after removing node 0"
         );
     }
@@ -451,7 +447,7 @@ pub mod __private_testing {
         node_count: fn(&G) -> usize,
         edge_count: fn(&G) -> usize,
     ) {
-        let (mut graph, nodes, edges) = create_test_graph(graph_constructor);
+        let (mut graph, nodes, edges) = DEFAULT_TEST_GRAPH.build(graph_constructor);
 
         // Node 4 is the newest node and isolated.
         graph
@@ -465,12 +461,12 @@ pub mod __private_testing {
         );
         assert_eq!(
             node_count(&graph),
-            TEST_GRAPH_NODE_COUNT - 1,
+            DEFAULT_TEST_GRAPH.node_count - 1,
             "{graph_type}::node_count() did not match expected value after removing node 4"
         );
         assert_eq!(
             edge_count(&graph),
-            TEST_GRAPH_EDGE_COUNT,
+            DEFAULT_TEST_GRAPH.edge_count(),
             "{graph_type}::edge_count() changed after removing isolated node 4"
         );
         assert_contains_nodes(
@@ -497,7 +493,7 @@ pub mod __private_testing {
         node_count: fn(&G) -> usize,
         edge_count: fn(&G) -> usize,
     ) {
-        let (mut graph, nodes, edges) = create_test_graph(graph_constructor);
+        let (mut graph, nodes, edges) = DEFAULT_TEST_GRAPH.build(graph_constructor);
 
         // Nodes are removed newest first, as some graph implementations might not have stable
         // node ids.
@@ -539,7 +535,7 @@ pub mod __private_testing {
         node_count: fn(&G) -> usize,
         edge_count: fn(&G) -> usize,
     ) {
-        let (mut graph, nodes, edges) = create_test_graph(graph_constructor);
+        let (mut graph, nodes, edges) = DEFAULT_TEST_GRAPH.build(graph_constructor);
 
         // We remove edge 3 here, as some graph implementations might not have stable edge ids,
         // but the newest edge added is likely to be removable without another edge taking its
@@ -555,12 +551,12 @@ pub mod __private_testing {
         );
         assert_eq!(
             edge_count(&graph),
-            TEST_GRAPH_EDGE_COUNT - 1,
+            DEFAULT_TEST_GRAPH.edge_count() - 1,
             "{graph_type}::edge_count() did not match expected value after removing edge 3"
         );
         assert_eq!(
             node_count(&graph),
-            TEST_GRAPH_NODE_COUNT,
+            DEFAULT_TEST_GRAPH.node_count,
             "{graph_type}::node_count() changed after removing edge 3"
         );
         assert_contains_edges(
@@ -583,7 +579,7 @@ pub mod __private_testing {
             "EditableGraph::remove_edge() did not return an error for an already removed edge"
         );
 
-        let (source, target) = TEST_GRAPH_EDGE_ENDPOINTS[3];
+        let (source, target) = DEFAULT_TEST_GRAPH.edge_endpoints[3];
         let new_edge = graph
             .add_edge(nodes[source], nodes[target], ())
             .expect("EditableGraph::add_edge() returned an error after removing the same edge");
@@ -593,7 +589,7 @@ pub mod __private_testing {
         );
         assert_eq!(
             edge_count(&graph),
-            TEST_GRAPH_EDGE_COUNT,
+            DEFAULT_TEST_GRAPH.edge_count(),
             "{graph_type}::edge_count() did not match expected value after re-adding edge 3"
         );
     }

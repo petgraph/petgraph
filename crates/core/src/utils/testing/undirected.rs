@@ -1,21 +1,48 @@
 /// Generates a suite of tests for [`UndirectedGraph`][crate::graph::UndirectedGraph]
-/// implementations.
+/// implementations, which runs on the
+/// [`DEFAULT_TEST_GRAPH`][crate::utils::testing::__common::DEFAULT_TEST_GRAPH].
 ///
-/// At least one test is generated for each method in the
-/// [`UndirectedGraph`][crate::graph::UndirectedGraph] trait. The following invariants are expected
-/// from the graph implementation:
-/// - If the most recently added node or edge is removed, its ID will no longer be valid. I.e.,
-///   calling methods with that ID should return `None` or otherwise indicate non-existence.
-///
-/// The arguments to this macro are as follows (`G` is used to denote the graph type being tested):
-/// - `$graph_constructor`: `impl Fn() -> G`. An expression that constructs a new instance of the
-///   graph type to be tested. The generated graph must be empty (e.g. `G::new()`).
+/// For the expected invariants and the arguments of this macro, see
+/// [`__test_undirected_graph_inner`][crate::__test_undirected_graph_inner], which can also be used
+/// to run the suite on other test graphs.
 ///
 /// For a reference usage, see the tests in [`crate::utils::test_graphs::undirected`].
 #[macro_export]
 macro_rules! test_undirected_graph {
     ($graph_constructor:expr,) => {
-        mod undirected_graph_test_macro {
+        $crate::__test_undirected_graph_inner!(
+            undirected_graph_test_macro,
+            $graph_constructor,
+            $crate::utils::testing::__common::DEFAULT_TEST_GRAPH,
+        );
+    };
+}
+
+/// Generates a suite of tests for [`UndirectedGraph`][crate::graph::UndirectedGraph]
+/// implementations, which runs on the given test graph.
+///
+/// At least one test is generated for each method in the
+/// [`UndirectedGraph`][crate::graph::UndirectedGraph] trait. The expected results are derived from
+/// the test graph, so the suite can be run on any test graph that the graph type is able to
+/// represent. The following invariants are expected from the graph implementation:
+/// - If the most recently added node or edge is removed, its ID will no longer be valid. I.e.,
+///   calling methods with that ID should return `None` or otherwise indicate non-existence.
+///
+/// The arguments to this macro are as follows (`G` is used to denote the graph type being tested):
+/// - `$test_module`: `ident`. The name of the module the tests are generated in. It has to be
+///   unique within the invoking module, so that the suite can be run on multiple test graphs.
+/// - `$graph_constructor`: `impl Fn() -> G`. An expression that constructs a new instance of the
+///   graph type to be tested. The generated graph must be empty (e.g. `G::new()`).
+/// - `$test_graph`: [`TestGraph`][crate::utils::testing::__common::TestGraph]. The test graph,
+///   which is built by adding its nodes and edges to the graphs returned by `$graph_constructor`.
+///
+/// Prefer using [`test_undirected_graph`][crate::test_undirected_graph] to run the suite on the
+/// default test graph.
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __test_undirected_graph_inner {
+    ($test_module:ident, $graph_constructor:expr, $test_graph:expr,) => {
+        mod $test_module {
             #[allow(unused_imports)]
             use super::*;
 
@@ -23,6 +50,7 @@ macro_rules! test_undirected_graph {
             fn test_density_hint() {
                 $crate::utils::testing::undirected::__private_testing::test_density_hint_inner(
                     $graph_constructor,
+                    $test_graph,
                 );
             }
 
@@ -30,6 +58,7 @@ macro_rules! test_undirected_graph {
             fn test_cardinality() {
                 $crate::utils::testing::undirected::__private_testing::test_cardinality_inner(
                     $graph_constructor,
+                    $test_graph,
                 );
             }
 
@@ -37,6 +66,7 @@ macro_rules! test_undirected_graph {
             fn test_nodes() {
                 $crate::utils::testing::undirected::__private_testing::test_nodes_inner(
                     $graph_constructor,
+                    $test_graph,
                 );
             }
 
@@ -44,6 +74,7 @@ macro_rules! test_undirected_graph {
             fn test_nodes_mut() {
                 $crate::utils::testing::undirected::__private_testing::test_nodes_mut_inner(
                     $graph_constructor,
+                    $test_graph,
                 );
             }
 
@@ -51,6 +82,7 @@ macro_rules! test_undirected_graph {
             fn test_isolated_nodes() {
                 $crate::utils::testing::undirected::__private_testing::test_isolated_nodes_inner(
                     $graph_constructor,
+                    $test_graph,
                 );
             }
 
@@ -58,6 +90,7 @@ macro_rules! test_undirected_graph {
             fn test_edges() {
                 $crate::utils::testing::undirected::__private_testing::test_edges_inner(
                     $graph_constructor,
+                    $test_graph,
                 );
             }
 
@@ -65,6 +98,7 @@ macro_rules! test_undirected_graph {
             fn test_edges_mut() {
                 $crate::utils::testing::undirected::__private_testing::test_edges_mut_inner(
                     $graph_constructor,
+                    $test_graph,
                 );
             }
 
@@ -72,6 +106,7 @@ macro_rules! test_undirected_graph {
             fn test_node() {
                 $crate::utils::testing::undirected::__private_testing::test_node_inner(
                     $graph_constructor,
+                    $test_graph,
                 );
             }
 
@@ -79,6 +114,7 @@ macro_rules! test_undirected_graph {
             fn test_node_mut() {
                 $crate::utils::testing::undirected::__private_testing::test_node_mut_inner(
                     $graph_constructor,
+                    $test_graph,
                 );
             }
 
@@ -86,6 +122,7 @@ macro_rules! test_undirected_graph {
             fn test_edge() {
                 $crate::utils::testing::undirected::__private_testing::test_edge_inner(
                     $graph_constructor,
+                    $test_graph,
                 );
             }
 
@@ -93,6 +130,7 @@ macro_rules! test_undirected_graph {
             fn test_edge_mut() {
                 $crate::utils::testing::undirected::__private_testing::test_edge_mut_inner(
                     $graph_constructor,
+                    $test_graph,
                 );
             }
 
@@ -100,6 +138,7 @@ macro_rules! test_undirected_graph {
             fn test_degree() {
                 $crate::utils::testing::undirected::__private_testing::test_degree_inner(
                     $graph_constructor,
+                    $test_graph,
                 );
             }
 
@@ -107,6 +146,7 @@ macro_rules! test_undirected_graph {
             fn test_incident_edges() {
                 $crate::utils::testing::undirected::__private_testing::test_incident_edges_inner(
                     $graph_constructor,
+                    $test_graph,
                 );
             }
 
@@ -114,6 +154,7 @@ macro_rules! test_undirected_graph {
             fn test_incident_edges_mut() {
                 $crate::utils::testing::undirected::__private_testing::test_incident_edges_mut_inner(
                     $graph_constructor,
+                    $test_graph,
                 );
             }
 
@@ -121,6 +162,7 @@ macro_rules! test_undirected_graph {
             fn test_adjacencies() {
                 $crate::utils::testing::undirected::__private_testing::test_adjacencies_inner(
                     $graph_constructor,
+                    $test_graph,
                 );
             }
 
@@ -128,6 +170,7 @@ macro_rules! test_undirected_graph {
             fn test_edges_connecting() {
                 $crate::utils::testing::undirected::__private_testing::test_edges_connecting_inner(
                     $graph_constructor,
+                    $test_graph,
                 );
             }
 
@@ -135,6 +178,7 @@ macro_rules! test_undirected_graph {
             fn test_edges_connecting_mut() {
                 $crate::utils::testing::undirected::__private_testing::test_edges_connecting_mut_inner(
                     $graph_constructor,
+                    $test_graph,
                 );
             }
 
@@ -142,6 +186,7 @@ macro_rules! test_undirected_graph {
             fn test_contains_node() {
                 $crate::utils::testing::undirected::__private_testing::test_contains_node_inner(
                     $graph_constructor,
+                    $test_graph,
                 );
             }
 
@@ -149,6 +194,7 @@ macro_rules! test_undirected_graph {
             fn test_contains_edge() {
                 $crate::utils::testing::undirected::__private_testing::test_contains_edge_inner(
                     $graph_constructor,
+                    $test_graph,
                 );
             }
 
@@ -156,6 +202,7 @@ macro_rules! test_undirected_graph {
             fn test_is_adjacent() {
                 $crate::utils::testing::undirected::__private_testing::test_is_adjacent_inner(
                     $graph_constructor,
+                    $test_graph,
                 );
             }
 
@@ -163,6 +210,7 @@ macro_rules! test_undirected_graph {
             fn test_is_empty() {
                 $crate::utils::testing::undirected::__private_testing::test_is_empty_inner(
                     $graph_constructor,
+                    $test_graph,
                 );
             }
         }
@@ -178,11 +226,7 @@ pub mod __private_testing {
     use crate::{
         graph::{EditableGraph, UndirectedGraph},
         id::Id,
-        utils::testing::{
-            TEST_GRAPH_EDGE_COUNT, TEST_GRAPH_EDGE_ENDPOINTS, TEST_GRAPH_NODE_COUNT,
-            check_if_edges_match, check_if_nodes_match, create_test_graph, expected_edge_endpoints,
-            expected_edges,
-        },
+        utils::testing::{TestGraph, check_if_edges_match, check_if_nodes_match},
     };
 
     /// Returns the given `(id, source, target)` triple of an edge with its endpoints swapped, if
@@ -203,8 +247,9 @@ pub mod __private_testing {
         G: UndirectedGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = ()>,
     >(
         graph_constructor: fn() -> G,
+        test_graph: TestGraph,
     ) {
-        let (graph, _, _) = create_test_graph(graph_constructor);
+        let (graph, _, _) = test_graph.build(graph_constructor);
 
         // DensityHint is a hint, so this is intentionally only a smoke test.
         let _density_hint = UndirectedGraph::density_hint(&graph);
@@ -214,41 +259,49 @@ pub mod __private_testing {
         G: UndirectedGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = ()>,
     >(
         graph_constructor: fn() -> G,
+        test_graph: TestGraph,
     ) {
-        let (mut graph, nodes, edges) = create_test_graph(graph_constructor);
+        let (mut graph, nodes, edges) = test_graph.build(graph_constructor);
 
         assert_eq!(
             UndirectedGraph::node_count(&graph),
-            TEST_GRAPH_NODE_COUNT,
+            test_graph.node_count,
             "UndirectedGraph::node_count() did not match expected value"
         );
         assert_eq!(
             UndirectedGraph::edge_count(&graph),
-            TEST_GRAPH_EDGE_COUNT,
+            test_graph.edge_count(),
             "UndirectedGraph::edge_count() did not match expected value"
         );
 
         let cardinality = UndirectedGraph::cardinality(&graph);
         assert_eq!(
-            cardinality.order, TEST_GRAPH_NODE_COUNT,
+            cardinality.order, test_graph.node_count,
             "UndirectedGraph::cardinality().order did not match expected value"
         );
         assert_eq!(
-            cardinality.size, TEST_GRAPH_EDGE_COUNT,
+            cardinality.size,
+            test_graph.edge_count(),
             "UndirectedGraph::cardinality().size did not match expected value"
         );
 
-        graph.remove_node(nodes[0]).unwrap();
+        let Some(&first_node) = nodes.first() else {
+            return;
+        };
+
+        graph.remove_node(first_node).unwrap();
 
         assert_eq!(
             UndirectedGraph::node_count(&graph),
-            TEST_GRAPH_NODE_COUNT - 1,
+            test_graph.node_count - 1,
             "UndirectedGraph::node_count() did not match expected value after removing node 0"
         );
 
         assert_eq!(
             UndirectedGraph::edge_count(&graph),
-            expected_edges(edges, |source, target| source != 0 && target != 0).count(),
+            test_graph
+                .expected_edges(&edges, |source, target| source != 0 && target != 0)
+                .count(),
             "UndirectedGraph::edge_count() did not match expected value after removing node 0"
         );
     }
@@ -257,15 +310,16 @@ pub mod __private_testing {
         G: UndirectedGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = ()>,
     >(
         graph_constructor: fn() -> G,
+        test_graph: TestGraph,
     ) where
         G::NodeId: Hash + Eq,
         G::EdgeId: Hash + Eq,
     {
-        let (graph, nodes, _) = create_test_graph(graph_constructor);
+        let (graph, nodes, _) = test_graph.build(graph_constructor);
 
         assert_eq!(
             UndirectedGraph::nodes(&graph).count(),
-            TEST_GRAPH_NODE_COUNT,
+            test_graph.node_count,
             "UndirectedGraph::nodes().count() did not match expected value"
         );
 
@@ -282,15 +336,16 @@ pub mod __private_testing {
         G: UndirectedGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = ()>,
     >(
         graph_constructor: fn() -> G,
+        test_graph: TestGraph,
     ) where
         G::NodeId: Hash + Eq,
         G::EdgeId: Hash + Eq,
     {
-        let (mut graph, nodes, _) = create_test_graph(graph_constructor);
+        let (mut graph, nodes, _) = test_graph.build(graph_constructor);
 
         assert_eq!(
             UndirectedGraph::nodes_mut(&mut graph).count(),
-            TEST_GRAPH_NODE_COUNT,
+            test_graph.node_count,
             "UndirectedGraph::nodes_mut().count() did not match expected value"
         );
 
@@ -307,14 +362,17 @@ pub mod __private_testing {
         G: UndirectedGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = ()>,
     >(
         graph_constructor: fn() -> G,
+        test_graph: TestGraph,
     ) where
         G::NodeId: Hash + Eq,
         G::EdgeId: Hash + Eq,
     {
-        let (graph, nodes, _) = create_test_graph(graph_constructor);
+        let (graph, nodes, _) = test_graph.build(graph_constructor);
 
         check_if_nodes_match(
-            [nodes[4]],
+            test_graph.expected_nodes(&nodes, |node| {
+                !test_graph.has_edge(|source, target| source == node || target == node)
+            }),
             UndirectedGraph::isolated_nodes(&graph).map(|node| node.id),
             "isolated_nodes",
             "UndirectedGraph",
@@ -326,21 +384,22 @@ pub mod __private_testing {
         G: UndirectedGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = ()>,
     >(
         graph_constructor: fn() -> G,
+        test_graph: TestGraph,
     ) where
         G::NodeId: Hash + Eq,
         G::EdgeId: Hash + Eq,
     {
-        let (graph, nodes, edges) = create_test_graph(graph_constructor);
+        let (graph, nodes, edges) = test_graph.build(graph_constructor);
 
         assert_eq!(
             UndirectedGraph::edges(&graph).count(),
-            TEST_GRAPH_EDGE_COUNT,
+            test_graph.edge_count(),
             "UndirectedGraph::edges().count() did not match expected value"
         );
 
-        let expected_endpoints = expected_edge_endpoints(nodes, edges);
+        let expected_endpoints = test_graph.expected_edge_endpoints(&nodes, &edges);
         check_if_edges_match(
-            expected_endpoints,
+            expected_endpoints.iter().copied(),
             UndirectedGraph::edges(&graph).map(|edge| {
                 normalize_endpoints(&expected_endpoints, (edge.id, edge.source, edge.target))
             }),
@@ -354,21 +413,22 @@ pub mod __private_testing {
         G: UndirectedGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = ()>,
     >(
         graph_constructor: fn() -> G,
+        test_graph: TestGraph,
     ) where
         G::NodeId: Hash + Eq,
         G::EdgeId: Hash + Eq,
     {
-        let (mut graph, nodes, edges) = create_test_graph(graph_constructor);
+        let (mut graph, nodes, edges) = test_graph.build(graph_constructor);
 
         assert_eq!(
             UndirectedGraph::edges_mut(&mut graph).count(),
-            TEST_GRAPH_EDGE_COUNT,
+            test_graph.edge_count(),
             "UndirectedGraph::edges_mut().count() did not match expected value"
         );
 
-        let expected_endpoints = expected_edge_endpoints(nodes, edges);
+        let expected_endpoints = test_graph.expected_edge_endpoints(&nodes, &edges);
         check_if_edges_match(
-            expected_endpoints,
+            expected_endpoints.iter().copied(),
             UndirectedGraph::edges_mut(&mut graph).map(|edge| {
                 normalize_endpoints(&expected_endpoints, (edge.id, edge.source, edge.target))
             }),
@@ -382,8 +442,9 @@ pub mod __private_testing {
         G: UndirectedGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = ()>,
     >(
         graph_constructor: fn() -> G,
+        test_graph: TestGraph,
     ) {
-        let (mut graph, nodes, _) = create_test_graph(graph_constructor);
+        let (mut graph, nodes, _) = test_graph.build(graph_constructor);
 
         for &node_id in &nodes {
             let node = UndirectedGraph::node(&graph, node_id)
@@ -394,13 +455,14 @@ pub mod __private_testing {
             );
         }
 
-        // We remove node 4 here, as some graph implementations might not have stable node ids,
-        // but the newest node added is likely to be removable without another node taking its
-        // id.
-        graph.remove_node(nodes[4]).unwrap();
+        let Some(&last_node) = nodes.last() else {
+            return;
+        };
+
+        graph.remove_node(last_node).unwrap();
 
         assert!(
-            UndirectedGraph::node(&graph, nodes[4]).is_none(),
+            UndirectedGraph::node(&graph, last_node).is_none(),
             "UndirectedGraph::node() did not return None for removed node id"
         );
     }
@@ -409,8 +471,9 @@ pub mod __private_testing {
         G: UndirectedGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = ()>,
     >(
         graph_constructor: fn() -> G,
+        test_graph: TestGraph,
     ) {
-        let (mut graph, nodes, _) = create_test_graph(graph_constructor);
+        let (mut graph, nodes, _) = test_graph.build(graph_constructor);
 
         for &node_id in &nodes {
             let node = UndirectedGraph::node_mut(&mut graph, node_id)
@@ -421,13 +484,14 @@ pub mod __private_testing {
             );
         }
 
-        // We remove node 4 here, as some graph implementations might not have stable node ids,
-        // but the newest node added is likely to be removable without another node taking its
-        // id.
-        graph.remove_node(nodes[4]).unwrap();
+        let Some(&last_node) = nodes.last() else {
+            return;
+        };
+
+        graph.remove_node(last_node).unwrap();
 
         assert!(
-            UndirectedGraph::node_mut(&mut graph, nodes[4]).is_none(),
+            UndirectedGraph::node_mut(&mut graph, last_node).is_none(),
             "UndirectedGraph::node_mut() did not return None for removed node id"
         );
     }
@@ -436,8 +500,9 @@ pub mod __private_testing {
         G: UndirectedGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = ()>,
     >(
         graph_constructor: fn() -> G,
+        test_graph: TestGraph,
     ) {
-        let (mut graph, _, edges) = create_test_graph(graph_constructor);
+        let (mut graph, _, edges) = test_graph.build(graph_constructor);
 
         for &edge_id in &edges {
             let edge = UndirectedGraph::edge(&graph, edge_id)
@@ -448,13 +513,14 @@ pub mod __private_testing {
             );
         }
 
-        // We remove edge 3 here, as some graph implementations might not have stable edge ids,
-        // but the newest edge added is likely to be removable without another edge taking its
-        // id.
-        graph.remove_edge(edges[3]).unwrap();
+        let Some(&last_edge) = edges.last() else {
+            return;
+        };
+
+        graph.remove_edge(last_edge).unwrap();
 
         assert!(
-            UndirectedGraph::edge(&graph, edges[3]).is_none(),
+            UndirectedGraph::edge(&graph, last_edge).is_none(),
             "UndirectedGraph::edge() did not return None for removed edge id"
         );
     }
@@ -463,8 +529,9 @@ pub mod __private_testing {
         G: UndirectedGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = ()>,
     >(
         graph_constructor: fn() -> G,
+        test_graph: TestGraph,
     ) {
-        let (mut graph, _, edges) = create_test_graph(graph_constructor);
+        let (mut graph, _, edges) = test_graph.build(graph_constructor);
 
         for &edge_id in &edges {
             let edge = UndirectedGraph::edge_mut(&mut graph, edge_id)
@@ -475,13 +542,14 @@ pub mod __private_testing {
             );
         }
 
-        // We remove edge 3 here, as some graph implementations might not have stable edge ids,
-        // but the newest edge added is likely to be removable without another edge taking its
-        // id.
-        graph.remove_edge(edges[3]).unwrap();
+        let Some(&last_edge) = edges.last() else {
+            return;
+        };
+
+        graph.remove_edge(last_edge).unwrap();
 
         assert!(
-            UndirectedGraph::edge_mut(&mut graph, edges[3]).is_none(),
+            UndirectedGraph::edge_mut(&mut graph, last_edge).is_none(),
             "UndirectedGraph::edge_mut() did not return None for removed edge id"
         );
     }
@@ -490,13 +558,18 @@ pub mod __private_testing {
         G: UndirectedGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = ()>,
     >(
         graph_constructor: fn() -> G,
+        test_graph: TestGraph,
     ) {
-        let (graph, nodes, edges) = create_test_graph(graph_constructor);
+        let (graph, nodes, edges) = test_graph.build(graph_constructor);
 
         for (node_number, &node) in nodes.iter().enumerate() {
             // An edge counts once for each of its endpoints, so self-loops count twice.
-            let expected_degree = expected_edges(edges, |source, _| source == node_number).count()
-                + expected_edges(edges, |_, target| target == node_number).count();
+            let expected_degree = test_graph
+                .expected_edges(&edges, |source, _| source == node_number)
+                .count()
+                + test_graph
+                    .expected_edges(&edges, |_, target| target == node_number)
+                    .count();
             assert_eq!(
                 UndirectedGraph::degree(&graph, node),
                 expected_degree,
@@ -509,15 +582,16 @@ pub mod __private_testing {
         G: UndirectedGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = ()>,
     >(
         graph_constructor: fn() -> G,
+        test_graph: TestGraph,
     ) where
         G::NodeId: Hash + Eq,
         G::EdgeId: Hash + Eq,
     {
-        let (graph, nodes, edges) = create_test_graph(graph_constructor);
+        let (graph, nodes, edges) = test_graph.build(graph_constructor);
 
         for (node_number, &node) in nodes.iter().enumerate() {
             check_if_edges_match(
-                expected_edges(edges, |source, target| {
+                test_graph.expected_edges(&edges, |source, target| {
                     source == node_number || target == node_number
                 }),
                 UndirectedGraph::incident_edges(&graph, node).map(|edge| edge.id),
@@ -532,15 +606,16 @@ pub mod __private_testing {
         G: UndirectedGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = ()>,
     >(
         graph_constructor: fn() -> G,
+        test_graph: TestGraph,
     ) where
         G::NodeId: Hash + Eq,
         G::EdgeId: Hash + Eq,
     {
-        let (mut graph, nodes, edges) = create_test_graph(graph_constructor);
+        let (mut graph, nodes, edges) = test_graph.build(graph_constructor);
 
         for (node_number, &node) in nodes.iter().enumerate() {
             check_if_edges_match(
-                expected_edges(edges, |source, target| {
+                test_graph.expected_edges(&edges, |source, target| {
                     source == node_number || target == node_number
                 }),
                 UndirectedGraph::incident_edges_mut(&mut graph, node).map(|edge| edge.id),
@@ -555,23 +630,25 @@ pub mod __private_testing {
         G: UndirectedGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = ()>,
     >(
         graph_constructor: fn() -> G,
+        test_graph: TestGraph,
     ) where
         G::NodeId: Hash + Eq,
         G::EdgeId: Hash + Eq,
     {
-        let (graph, nodes, _) = create_test_graph(graph_constructor);
+        let (graph, nodes, _) = test_graph.build(graph_constructor);
 
-        for node_number in 0..nodes.len() {
-            let expected_nodes = match node_number {
-                0 | 3 => [Some(nodes[1]), Some(nodes[2])],
-                1 | 2 => [Some(nodes[0]), Some(nodes[3])],
-                4 => [None, None],
-                _ => unreachable!(),
-            };
-
+        for (node_number, &node) in nodes.iter().enumerate() {
             check_if_nodes_match(
-                core::iter::IntoIterator::into_iter(expected_nodes).flatten(),
-                UndirectedGraph::adjacencies(&graph, nodes[node_number]),
+                test_graph.expected_neighbors(&nodes, |source, target| {
+                    if source == node_number {
+                        Some(target)
+                    } else if target == node_number {
+                        Some(source)
+                    } else {
+                        None
+                    }
+                }),
+                UndirectedGraph::adjacencies(&graph, node),
                 "adjacencies",
                 "UndirectedGraph",
                 format_args!("node {node_number}"),
@@ -583,16 +660,17 @@ pub mod __private_testing {
         G: UndirectedGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = ()>,
     >(
         graph_constructor: fn() -> G,
+        test_graph: TestGraph,
     ) where
         G::NodeId: Hash + Eq,
         G::EdgeId: Hash + Eq,
     {
-        let (graph, nodes, edges) = create_test_graph(graph_constructor);
+        let (graph, nodes, edges) = test_graph.build(graph_constructor);
 
         for lhs_number in 0..nodes.len() {
             for rhs_number in 0..nodes.len() {
                 check_if_edges_match(
-                    expected_edges(edges, |source, target| {
+                    test_graph.expected_edges(&edges, |source, target| {
                         (source, target) == (lhs_number, rhs_number)
                             || (target, source) == (lhs_number, rhs_number)
                     }),
@@ -610,16 +688,17 @@ pub mod __private_testing {
         G: UndirectedGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = ()>,
     >(
         graph_constructor: fn() -> G,
+        test_graph: TestGraph,
     ) where
         G::NodeId: Hash + Eq,
         G::EdgeId: Hash + Eq,
     {
-        let (mut graph, nodes, edges) = create_test_graph(graph_constructor);
+        let (mut graph, nodes, edges) = test_graph.build(graph_constructor);
 
         for lhs_number in 0..nodes.len() {
             for rhs_number in 0..nodes.len() {
                 check_if_edges_match(
-                    expected_edges(edges, |source, target| {
+                    test_graph.expected_edges(&edges, |source, target| {
                         (source, target) == (lhs_number, rhs_number)
                             || (target, source) == (lhs_number, rhs_number)
                     }),
@@ -641,8 +720,9 @@ pub mod __private_testing {
         G: UndirectedGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = ()>,
     >(
         graph_constructor: fn() -> G,
+        test_graph: TestGraph,
     ) {
-        let (mut graph, nodes, _) = create_test_graph(graph_constructor);
+        let (mut graph, nodes, _) = test_graph.build(graph_constructor);
 
         for &node in &nodes {
             assert!(
@@ -651,15 +731,15 @@ pub mod __private_testing {
             );
         }
 
-        // We remove node 4 here, as some graph implementations might not have stable node ids,
-        // but the newest node added is likely to be removable without another node taking its
-        // id.
-        graph.remove_node(nodes[4]).unwrap();
+        let Some(&last_node) = nodes.last() else {
+            return;
+        };
+
+        graph.remove_node(last_node).unwrap();
 
         assert!(
-            !UndirectedGraph::contains_node(&graph, nodes[4]),
-            "UndirectedGraph::contains_node() returned true for removed node: {:?}",
-            nodes[4]
+            !UndirectedGraph::contains_node(&graph, last_node),
+            "UndirectedGraph::contains_node() returned true for removed node: {last_node:?}"
         );
     }
 
@@ -667,8 +747,9 @@ pub mod __private_testing {
         G: UndirectedGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = ()>,
     >(
         graph_constructor: fn() -> G,
+        test_graph: TestGraph,
     ) {
-        let (mut graph, _, edges) = create_test_graph(graph_constructor);
+        let (mut graph, _, edges) = test_graph.build(graph_constructor);
 
         for &edge in &edges {
             assert!(
@@ -677,15 +758,15 @@ pub mod __private_testing {
             );
         }
 
-        // We remove edge 3 here, as some graph implementations might not have stable edge ids,
-        // but the newest edge added is likely to be removable without another edge taking its
-        // id.
-        graph.remove_edge(edges[3]).unwrap();
+        let Some(&last_edge) = edges.last() else {
+            return;
+        };
+
+        graph.remove_edge(last_edge).unwrap();
 
         assert!(
-            !UndirectedGraph::contains_edge(&graph, edges[3]),
-            "UndirectedGraph::contains_edge() returned true for removed edge: {:?}",
-            edges[3]
+            !UndirectedGraph::contains_edge(&graph, last_edge),
+            "UndirectedGraph::contains_edge() returned true for removed edge: {last_edge:?}"
         );
     }
 
@@ -693,14 +774,18 @@ pub mod __private_testing {
         G: UndirectedGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = ()>,
     >(
         graph_constructor: fn() -> G,
+        test_graph: TestGraph,
     ) {
-        let (graph, nodes, _) = create_test_graph(graph_constructor);
+        let (graph, nodes, _) = test_graph.build(graph_constructor);
 
         for lhs_number in 0..nodes.len() {
             for rhs_number in 0..nodes.len() {
-                let expected_adjacency = TEST_GRAPH_EDGE_ENDPOINTS
+                let expected_adjacency = test_graph
+                    .edge_endpoints
                     .contains(&(lhs_number, rhs_number))
-                    || TEST_GRAPH_EDGE_ENDPOINTS.contains(&(rhs_number, lhs_number));
+                    || test_graph
+                        .edge_endpoints
+                        .contains(&(rhs_number, lhs_number));
                 assert_eq!(
                     UndirectedGraph::is_adjacent(&graph, nodes[lhs_number], nodes[rhs_number],),
                     expected_adjacency,
@@ -717,12 +802,14 @@ pub mod __private_testing {
         G: UndirectedGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = ()>,
     >(
         graph_constructor: fn() -> G,
+        test_graph: TestGraph,
     ) {
-        let (graph, _, _) = create_test_graph(graph_constructor);
+        let (graph, _, _) = test_graph.build(graph_constructor);
 
-        assert!(
-            !UndirectedGraph::is_empty(&graph),
-            "UndirectedGraph::is_empty() returned true for a non-empty graph"
+        assert_eq!(
+            UndirectedGraph::is_empty(&graph),
+            test_graph.node_count == 0,
+            "UndirectedGraph::is_empty() did not match expected value for the test graph"
         );
 
         let mut new_graph = graph_constructor();

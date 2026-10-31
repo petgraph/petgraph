@@ -132,7 +132,7 @@ pub mod __private_testing {
             storable::{DataContainer, StorableGraph, VisitContainer},
         },
         id::Id,
-        utils::testing::{TEST_GRAPH_EDGE_COUNT, TEST_GRAPH_NODE_COUNT, create_test_graph},
+        utils::testing::DEFAULT_TEST_GRAPH,
     };
 
     /// The default value passed when creating data containers.
@@ -435,7 +435,7 @@ pub mod __private_testing {
     >(
         graph_constructor: fn() -> G,
     ) {
-        let (graph, nodes, _) = create_test_graph(graph_constructor);
+        let (graph, nodes, _) = DEFAULT_TEST_GRAPH.build(graph_constructor);
 
         check_visit_container(
             StorableGraph::node_visit_container(&graph),
@@ -455,7 +455,7 @@ pub mod __private_testing {
     >(
         graph_constructor: fn() -> G,
     ) {
-        let (graph, nodes, _) = create_test_graph(graph_constructor);
+        let (graph, nodes, _) = DEFAULT_TEST_GRAPH.build(graph_constructor);
 
         check_data_container(
             StorableGraph::node_data_container(&graph, DEFAULT_DATA),
@@ -475,7 +475,7 @@ pub mod __private_testing {
     >(
         graph_constructor: fn() -> G,
     ) {
-        let (graph, _, edges) = create_test_graph(graph_constructor);
+        let (graph, _, edges) = DEFAULT_TEST_GRAPH.build(graph_constructor);
 
         check_visit_container(
             StorableGraph::edge_visit_container(&graph),
@@ -495,7 +495,7 @@ pub mod __private_testing {
     >(
         graph_constructor: fn() -> G,
     ) {
-        let (graph, _, edges) = create_test_graph(graph_constructor);
+        let (graph, _, edges) = DEFAULT_TEST_GRAPH.build(graph_constructor);
 
         check_data_container(
             StorableGraph::edge_data_container(&graph, DEFAULT_DATA),
@@ -515,7 +515,7 @@ pub mod __private_testing {
     >(
         graph_constructor: fn() -> G,
     ) {
-        let (mut graph, nodes, edges) = create_test_graph(graph_constructor);
+        let (mut graph, nodes, edges) = DEFAULT_TEST_GRAPH.build(graph_constructor);
 
         // The newest edge and node are removed, as some graph implementations might not have
         // stable ids, but the newest ones added are likely to be removable without another edge or
@@ -567,7 +567,7 @@ pub mod __private_testing {
         node_ids: fn(&G) -> Vec<G::NodeId>,
         edge_ids: fn(&G) -> Vec<G::EdgeId>,
     ) {
-        let (mut graph, nodes, _) = create_test_graph(graph_constructor);
+        let (mut graph, nodes, _) = DEFAULT_TEST_GRAPH.build(graph_constructor);
 
         // These edges are not incident to node 0, so that enough edges remain after removing it.
         graph.add_edge(nodes[2], nodes[4], ()).unwrap();
@@ -584,12 +584,12 @@ pub mod __private_testing {
         let current_edges = edge_ids(&graph);
         assert_eq!(
             current_nodes.len(),
-            TEST_GRAPH_NODE_COUNT - 1,
+            DEFAULT_TEST_GRAPH.node_count - 1,
             "unexpected number of node ids returned by the graph after removing node 0"
         );
         assert_eq!(
             current_edges.len(),
-            TEST_GRAPH_EDGE_COUNT,
+            DEFAULT_TEST_GRAPH.edge_count(),
             "unexpected number of edge ids returned by the graph after removing node 0"
         );
 
