@@ -4,7 +4,7 @@
 /// provides. There are different macros based on whether the graph is a directed or undirected
 /// graph, and whether it supports self-loops or parallel edges.
 ///
-/// The macros run the tests on specified [TestGraph] instances, but these can also be provided by
+/// The macros run the tests on specified [`TestGraph`] instances, but these can also be provided by
 /// the user. However, this API may break at any point.
 pub mod directed;
 pub mod editable;
