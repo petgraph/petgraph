@@ -63,7 +63,7 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>> MatrixGraphExtras<N> for UnMatrixGra
         node_a: MatrixGraphNodeId,
         node_b: MatrixGraphNodeId,
     ) -> Option<usize> {
-        if node_a.0 >= self.node_capacity || node_b.0 >= self.node_capacity {
+        if node_a.0 >= self.edge_capacity_in_nodes || node_b.0 >= self.edge_capacity_in_nodes {
             None
         } else {
             Some(self.to_edge_position_unchecked(node_a, node_b))
@@ -80,15 +80,15 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>> MatrixGraphExtras<N> for UnMatrixGra
     }
 
     #[inline]
-    fn extend_capacity_for_node(&mut self, new_node_capacity: usize, _exact: bool) {
-        let old_node_capacity = self.node_capacity;
+    fn extend_capacity_for_node(&mut self, new_edge_capacity_in_nodes: usize, _exact: bool) {
+        let old_edge_capacity_in_nodes = self.edge_capacity_in_nodes;
 
-        if old_node_capacity >= new_node_capacity {
+        if old_edge_capacity_in_nodes >= new_edge_capacity_in_nodes {
             return;
         }
 
-        self.node_capacity =
-            extend_lower_triangular_matrix(&mut self.flattened_edge_data, new_node_capacity);
+        self.edge_capacity_in_nodes =
+            extend_lower_triangular_matrix(&mut self.flattened_edge_data, new_edge_capacity_in_nodes);
     }
 
     #[inline]
@@ -100,7 +100,7 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>> MatrixGraphExtras<N> for UnMatrixGra
         // If the node capacity is larger or equal to the node id, then there cannot exist any edges
         // incident to the node. But the node might still be in the node_data (i.e. the
         // graph) as an isolated node
-        if node.0 < self.node_capacity {
+        if node.0 < self.edge_capacity_in_nodes {
             for (id, _) in &self.node_data {
                 let position = self.to_edge_position(node, MatrixGraphNodeId(id));
                 if let Some(pos) = position {
@@ -313,13 +313,13 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>> UndirectedGraph for UnMatrixGraph<N,
     // Degree
     #[inline]
     fn degree(&self, node: Self::NodeId) -> usize {
-        NeighborIterator::new(&self.flattened_edge_data, node, self.node_capacity).count()
+        NeighborIterator::new(&self.flattened_edge_data, node, self.edge_capacity_in_nodes).count()
     }
 
     // Incidence
     #[inline]
     fn incident_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
-        NeighborIterator::new(&self.flattened_edge_data, node, self.node_capacity).map(
+        NeighborIterator::new(&self.flattened_edge_data, node, self.edge_capacity_in_nodes).map(
             move |(neighbor, data)| EdgeRef::<Self> {
                 id: UnMatrixEdgeId::new(node, neighbor),
                 source: node,
@@ -338,7 +338,7 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>> UndirectedGraph for UnMatrixGraph<N,
             &mut self.flattened_edge_data,
             node,
             MatrixGraphNodeId(0),
-            self.node_capacity,
+            self.edge_capacity_in_nodes,
         )
         .map(move |(neighbor, data)| EdgeMut::<Self> {
             id: UnMatrixEdgeId::new(node, neighbor),
@@ -351,7 +351,7 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>> UndirectedGraph for UnMatrixGraph<N,
     // Adjacency
     #[inline]
     fn adjacencies(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
-        NeighborIterator::new(&self.flattened_edge_data, node, self.node_capacity)
+        NeighborIterator::new(&self.flattened_edge_data, node, self.edge_capacity_in_nodes)
             .map(|(neighbor, _)| neighbor)
     }
 
@@ -496,26 +496,26 @@ struct NeighborIterator<'a, Null: NicheWrapper + 'a> {
     edges: &'a [Null],
     start_node: MatrixGraphNodeId,
     next_other_node: MatrixGraphNodeId,
-    node_capacity: usize,
+    edge_capacity_in_nodes: usize,
 }
 
 impl<'a, Null: NicheWrapper + 'a> NeighborIterator<'a, Null> {
-    const fn new(edges: &'a [Null], start_node: MatrixGraphNodeId, node_capacity: usize) -> Self {
-        if start_node.0 >= node_capacity {
+    const fn new(edges: &'a [Null], start_node: MatrixGraphNodeId, edge_capacity_in_nodes: usize) -> Self {
+        if start_node.0 >= edge_capacity_in_nodes {
             // This iterator will be empty, since a node with an index greater than or equal to
             // the node capacity cannot have any neighbors.
             Self {
                 edges,
                 start_node,
                 next_other_node: start_node,
-                node_capacity,
+                edge_capacity_in_nodes,
             }
         } else {
             Self {
                 edges,
                 start_node,
                 next_other_node: MatrixGraphNodeId(0),
-                node_capacity,
+                edge_capacity_in_nodes,
             }
         }
     }
@@ -525,7 +525,7 @@ impl<'a, Null: NicheWrapper> Iterator for NeighborIterator<'a, Null> {
     type Item = (MatrixGraphNodeId, &'a Null::Wrapped);
 
     fn next(&mut self) -> Option<Self::Item> {
-        while self.next_other_node.0 < self.node_capacity {
+        while self.next_other_node.0 < self.edge_capacity_in_nodes {
             let this_other_node = self.next_other_node;
 
             let edge_index =
@@ -552,7 +552,7 @@ struct NeighborIterMut<'a, Null> {
     consumed: usize,
     source_node: MatrixGraphNodeId,
     next_node: MatrixGraphNodeId,
-    node_capacity: usize,
+    edge_capacity_in_nodes: usize,
 }
 
 impl<'a, Null> NeighborIterMut<'a, Null> {
@@ -561,9 +561,9 @@ impl<'a, Null> NeighborIterMut<'a, Null> {
         flattened_edge_data: &'a mut [Null],
         source_node: MatrixGraphNodeId,
         next_node: MatrixGraphNodeId,
-        node_capacity: usize,
+        edge_capacity_in_nodes: usize,
     ) -> Self {
-        if source_node.0 >= node_capacity {
+        if source_node.0 >= edge_capacity_in_nodes {
             // This iterator will be empty, since a node with an index greater than or equal to
             // the node capacity cannot have any neighbors.
             Self {
@@ -571,7 +571,7 @@ impl<'a, Null> NeighborIterMut<'a, Null> {
                 consumed: 0,
                 source_node,
                 next_node: source_node,
-                node_capacity,
+                edge_capacity_in_nodes,
             }
         } else {
             Self {
@@ -579,7 +579,7 @@ impl<'a, Null> NeighborIterMut<'a, Null> {
                 consumed: 0,
                 source_node,
                 next_node,
-                node_capacity,
+                edge_capacity_in_nodes,
             }
         }
     }
@@ -589,7 +589,7 @@ impl<'a, Null: NicheWrapper> Iterator for NeighborIterMut<'a, Null> {
     type Item = (MatrixGraphNodeId, &'a mut Null::Wrapped);
 
     fn next(&mut self) -> Option<Self::Item> {
-        while self.next_node.0 < self.node_capacity {
+        while self.next_node.0 < self.edge_capacity_in_nodes {
             let this_node = self.next_node;
             self.next_node.0 += 1;
 
@@ -678,7 +678,7 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>> StorableGraph for MatrixGraph<N, E, 
     fn edge_visit_container(&self) -> Self::EdgeVisitContainer {
         MatrixGraphVisitMap {
             visit_map: FixedBitSet::with_capacity(self.flattened_edge_data.len()),
-            node_capacity: self.node_capacity,
+            edge_capacity_in_nodes: self.edge_capacity_in_nodes,
             phantom: PhantomData,
         }
     }
@@ -689,7 +689,7 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>> StorableGraph for MatrixGraph<N, E, 
     ) -> Self::EdgeDataContainer<Data> {
         MatrixGraphEdgeDataContainer {
             data: vec![default_value.clone(); self.flattened_edge_data.len()],
-            node_capacity: self.node_capacity,
+            edge_capacity_in_nodes: self.edge_capacity_in_nodes,
             default_value,
             phantom: PhantomData,
         }

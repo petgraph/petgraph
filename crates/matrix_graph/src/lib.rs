@@ -219,7 +219,7 @@ pub trait MatrixGraphExtras<N>: Sealed + Graph {
     ) -> usize;
 
     /// Extends the capacity of the underlying flattened edge data vec for the node.
-    fn extend_capacity_for_node(&mut self, new_node_capacity: usize, exact: bool);
+    fn extend_capacity_for_node(&mut self, new_edge_capacity_in_nodes: usize, exact: bool);
 
     /// Remove `node` from the graph.
     ///
@@ -276,13 +276,13 @@ pub struct MatrixGraph<N, E, Dir = Directed, Null: NicheWrapper<Wrapped = E> = O
     flattened_edge_data: Vec<Null>,
     /// Node data and management of node indices.
     ///
-    /// Nodes may be in `node_data` but not be within the current `node_capacity`, if they are
-    /// isolated nodes. The flattened edge data and thus `node_capacity` is updated lazily,
-    /// that is, only once an edge adjacent to such a node is actually created.
+    /// Nodes may be in `node_data` but not be within the current `edge_capacity_in_nodes`, if they
+    /// are isolated nodes. The flattened edge data and thus `edge_capacity_in_nodes` is
+    /// updated lazily, that is, only once an edge adjacent to such a node is actually created.
     node_data: Slab<N>,
-    /// The current edge capacity with respect to the number of nodes. This is used to determine
-    /// when the backing matrix needs to be resized.
-    node_capacity: usize,
+    /// The current capacity of the flattened edge data with respect to the number of nodes it
+    /// fits. This is used to determine when the backing matrix needs to be resized.
+    edge_capacity_in_nodes: usize,
     /// The number of edges currently in the graph.
     edge_count: usize,
     directionality: PhantomData<Dir>,
@@ -306,17 +306,17 @@ where
     /// Create a new `MatrixGraph` with capacity sufficient to hold the specified number of nodes
     /// (and any edges between them) without resizing.
     #[must_use]
-    pub fn with_capacity(node_capacity: usize) -> Self {
+    pub fn with_capacity(edge_capacity_in_nodes: usize) -> Self {
         let mut graph = Self {
             flattened_edge_data: vec![],
-            node_capacity: 0,
-            node_data: Slab::with_capacity(node_capacity),
+            edge_capacity_in_nodes: 0,
+            node_data: Slab::with_capacity(edge_capacity_in_nodes),
             edge_count: 0,
             directionality: PhantomData,
         };
 
-        if node_capacity > 0 {
-            graph.extend_capacity_for_node(node_capacity, true);
+        if edge_capacity_in_nodes > 0 {
+            graph.extend_capacity_for_node(edge_capacity_in_nodes, true);
         }
 
         graph
@@ -325,7 +325,7 @@ where
     #[inline]
     fn extend_capacity_for_edge(&mut self, node_a: MatrixGraphNodeId, node_b: MatrixGraphNodeId) {
         let max_node = cmp::max(node_a, node_b);
-        if max_node.0 >= self.node_capacity {
+        if max_node.0 >= self.edge_capacity_in_nodes {
             self.extend_capacity_for_node(
                 max_node
                     .0
@@ -370,13 +370,13 @@ impl<N, E> MatrixGraph<N, E, Undirected, Option<E>> {
 
 pub struct MatrixGraphVisitMap<EdgeId> {
     visit_map: FixedBitSet,
-    node_capacity: usize,
+    edge_capacity_in_nodes: usize,
     phantom: PhantomData<EdgeId>,
 }
 
 pub struct MatrixGraphEdgeDataContainer<EdgeId, Data> {
     data: Vec<Data>,
-    node_capacity: usize,
+    edge_capacity_in_nodes: usize,
     default_value: Data,
     phantom: PhantomData<EdgeId>,
 }
