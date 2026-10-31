@@ -762,18 +762,18 @@ impl<'a, It: Iterator<Item = &'a mut Null>, Null: NicheWrapper> Iterator
 fn incoming_neighbor_iter<'a, Null: NicheWrapper + 'a>(
     node_adjacencies: &'a [Null],
     target: MatrixGraphNodeId,
-    num_nodes: usize,
+    edge_capacity_in_nodes: usize,
 ) -> impl Iterator<Item = (MatrixGraphNodeId, &'a <Null as NicheWrapper>::Wrapped)> {
     let start_index = target.0;
-    if num_nodes == 0 || start_index >= num_nodes {
+    if edge_capacity_in_nodes == 0 || start_index >= edge_capacity_in_nodes {
         return Either::Left(None.into_iter());
     }
     Either::Right(
         node_adjacencies
             .iter()
             .skip(start_index)
-            .step_by(num_nodes)
-            .take(num_nodes)
+            .step_by(edge_capacity_in_nodes)
+            .take(edge_capacity_in_nodes)
             .enumerate()
             .filter_map(move |(i, adj)| adj.as_ref().map(|data| (MatrixGraphNodeId(i), data))),
     )
@@ -785,16 +785,21 @@ fn incoming_neighbor_iter<'a, Null: NicheWrapper + 'a>(
 fn incoming_neighbor_iter_mut<'b, Null: NicheWrapper + 'b>(
     node_adjacencies: &'b mut [Null],
     target: MatrixGraphNodeId,
-    num_nodes: usize,
+    edge_capacity_in_nodes: usize,
 ) -> impl Iterator<Item = (MatrixGraphNodeId, &'b mut <Null as NicheWrapper>::Wrapped)> {
     let start_index = target.0;
-    node_adjacencies
-        .iter_mut()
-        .skip(start_index)
-        .step_by(num_nodes)
-        .take(num_nodes)
-        .enumerate()
-        .filter_map(move |(i, adj)| adj.as_mut().map(|data| (MatrixGraphNodeId(i), data)))
+    if edge_capacity_in_nodes == 0 || start_index >= edge_capacity_in_nodes {
+        return Either::Left(None.into_iter());
+    }
+    Either::Right(
+        node_adjacencies
+            .iter_mut()
+            .skip(start_index)
+            .step_by(edge_capacity_in_nodes)
+            .take(edge_capacity_in_nodes)
+            .enumerate()
+            .filter_map(move |(i, adj)| adj.as_mut().map(|data| (MatrixGraphNodeId(i), data))),
+    )
 }
 
 /// Returns an iterator over the neighbors of a node which correspond to outgoing edges with the
@@ -803,15 +808,20 @@ fn incoming_neighbor_iter_mut<'b, Null: NicheWrapper + 'b>(
 fn outgoing_neighbor_iter<'a, Null: NicheWrapper + 'a>(
     node_adjacencies: &'a [Null],
     source: MatrixGraphNodeId,
-    num_nodes: usize,
+    edge_capacity_in_nodes: usize,
 ) -> impl Iterator<Item = (MatrixGraphNodeId, &'a <Null as NicheWrapper>::Wrapped)> {
-    let start_index = source.0 * num_nodes;
-    node_adjacencies
-        .iter()
-        .skip(start_index)
-        .take(num_nodes)
-        .enumerate()
-        .filter_map(move |(i, adj)| adj.as_ref().map(|data| (MatrixGraphNodeId(i), data)))
+    let start_index = source.0 * edge_capacity_in_nodes;
+    if edge_capacity_in_nodes == 0 || source.0 >= edge_capacity_in_nodes {
+        return Either::Left(None.into_iter());
+    }
+    Either::Right(
+        node_adjacencies
+            .iter()
+            .skip(start_index)
+            .take(edge_capacity_in_nodes)
+            .enumerate()
+            .filter_map(move |(i, adj)| adj.as_ref().map(|data| (MatrixGraphNodeId(i), data))),
+    )
 }
 
 /// Returns an iterator over the neighbors of a node which correspond to outgoing edges with the
@@ -820,15 +830,20 @@ fn outgoing_neighbor_iter<'a, Null: NicheWrapper + 'a>(
 fn outgoing_neighbor_iter_mut<'b, Null: NicheWrapper + 'b>(
     node_adjacencies: &'b mut [Null],
     source: MatrixGraphNodeId,
-    num_nodes: usize,
+    edge_capacity_in_nodes: usize,
 ) -> impl Iterator<Item = (MatrixGraphNodeId, &'b mut <Null as NicheWrapper>::Wrapped)> {
-    let start_index = source.0 * num_nodes;
-    node_adjacencies
-        .iter_mut()
-        .skip(start_index)
-        .take(num_nodes)
-        .enumerate()
-        .filter_map(move |(i, adj)| adj.as_mut().map(|data| (MatrixGraphNodeId(i), data)))
+    let start_index = source.0 * edge_capacity_in_nodes;
+    if edge_capacity_in_nodes == 0 || source.0 >= edge_capacity_in_nodes {
+        return Either::Left(None.into_iter());
+    }
+    Either::Right(
+        node_adjacencies
+            .iter_mut()
+            .skip(start_index)
+            .take(edge_capacity_in_nodes)
+            .enumerate()
+            .filter_map(move |(i, adj)| adj.as_mut().map(|data| (MatrixGraphNodeId(i), data))),
+    )
 }
 
 /// Returns an iterator over the neighbors of a node with the edge data.
@@ -839,7 +854,7 @@ fn outgoing_neighbor_iter_mut<'b, Null: NicheWrapper + 'b>(
 fn neighbor_iter<'a, Null: NicheWrapper + 'a>(
     node_adjacencies: &'a [Null],
     node: MatrixGraphNodeId,
-    num_nodes: usize,
+    edge_capacity_in_nodes: usize,
 ) -> impl Iterator<
     Item = (
         MatrixGraphNodeId,
@@ -848,18 +863,18 @@ fn neighbor_iter<'a, Null: NicheWrapper + 'a>(
     ),
 > {
     // If the node index is out of bounds, return an empty iterator.
-    if node.0 >= num_nodes {
+    if edge_capacity_in_nodes == 0 || node.0 >= edge_capacity_in_nodes {
         return Either::Left(None.into_iter());
     }
 
-    let node_row_start = node.0 * num_nodes;
+    let node_row_start = node.0 * edge_capacity_in_nodes;
     let (rows_before, remaining) = node_adjacencies.split_at(node_row_start);
-    let (node_row, rows_after) = remaining.split_at(num_nodes);
+    let (node_row, rows_after) = remaining.split_at(edge_capacity_in_nodes);
 
     let incoming_before = rows_before
         .iter()
         .skip(node.0)
-        .step_by(num_nodes)
+        .step_by(edge_capacity_in_nodes)
         .enumerate()
         .filter_map(move |(source, adjacency)| {
             adjacency
@@ -879,7 +894,7 @@ fn neighbor_iter<'a, Null: NicheWrapper + 'a>(
     let incoming_after = rows_after
         .iter()
         .skip(node.0)
-        .step_by(num_nodes)
+        .step_by(edge_capacity_in_nodes)
         .enumerate()
         .filter_map(move |(offset, adjacency)| {
             let source = MatrixGraphNodeId(node.0 + 1 + offset);
@@ -897,7 +912,7 @@ fn neighbor_iter<'a, Null: NicheWrapper + 'a>(
 fn neighbor_iter_mut<'a, Null: NicheWrapper + 'a>(
     node_adjacencies: &'a mut [Null],
     node: MatrixGraphNodeId,
-    num_nodes: usize,
+    edge_capacity_in_nodes: usize,
 ) -> impl Iterator<
     Item = (
         MatrixGraphNodeId,
@@ -906,18 +921,18 @@ fn neighbor_iter_mut<'a, Null: NicheWrapper + 'a>(
     ),
 > {
     // If the node index is out of bounds, return an empty iterator.
-    if node.0 >= num_nodes {
+    if edge_capacity_in_nodes == 0 || node.0 >= edge_capacity_in_nodes {
         return Either::Left(None.into_iter());
     }
 
-    let node_row_start = node.0 * num_nodes;
+    let node_row_start = node.0 * edge_capacity_in_nodes;
     let (rows_before, remaining) = node_adjacencies.split_at_mut(node_row_start);
-    let (node_row, rows_after) = remaining.split_at_mut(num_nodes);
+    let (node_row, rows_after) = remaining.split_at_mut(edge_capacity_in_nodes);
 
     let incoming_before = rows_before
         .iter_mut()
         .skip(node.0)
-        .step_by(num_nodes)
+        .step_by(edge_capacity_in_nodes)
         .enumerate()
         .filter_map(move |(source, adjacency)| {
             adjacency
@@ -937,7 +952,7 @@ fn neighbor_iter_mut<'a, Null: NicheWrapper + 'a>(
     let incoming_after = rows_after
         .iter_mut()
         .skip(node.0)
-        .step_by(num_nodes)
+        .step_by(edge_capacity_in_nodes)
         .enumerate()
         .filter_map(move |(offset, adjacency)| {
             let source = MatrixGraphNodeId(node.0 + 1 + offset);
