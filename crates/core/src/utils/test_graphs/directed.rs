@@ -293,8 +293,11 @@ impl<N, E> EditableGraph for DirectedTestGraph<N, E, DirNodeId, DirEdgeId> {
 mod tests {
     use super::*;
     use crate::{
-        test_directed_editable_graph, test_directed_graph, test_directed_graph_parallel_edges,
-        test_directed_graph_self_loops, test_directed_storable_graph,
+        test_directed_editable_graph, test_directed_editable_graph_parallel_edges,
+        test_directed_editable_graph_self_loops, test_directed_graph,
+        test_directed_graph_parallel_edges, test_directed_graph_self_loops,
+        test_directed_storable_graph, test_directed_storable_graph_parallel_edges,
+        test_directed_storable_graph_self_loops,
     };
 
     test_directed_graph!(DirectedTestGraph::<(), (), DirNodeId, DirEdgeId>::new,);
@@ -302,5 +305,18 @@ mod tests {
     test_directed_graph_parallel_edges!(DirectedTestGraph::<(), (), DirNodeId, DirEdgeId>::new,);
 
     test_directed_editable_graph!(DirectedTestGraph::<(), (), DirNodeId, DirEdgeId>::new,);
+    test_directed_editable_graph_self_loops!(
+        DirectedTestGraph::<(), (), DirNodeId, DirEdgeId>::new,
+    );
+    test_directed_editable_graph_parallel_edges!(
+        DirectedTestGraph::<(), (), DirNodeId, DirEdgeId>::new,
+    );
+
     test_directed_storable_graph!(DirectedTestGraph::<(), (), DirNodeId, DirEdgeId>::new,);
+    test_directed_storable_graph_self_loops!(
+        DirectedTestGraph::<(), (), DirNodeId, DirEdgeId>::new,
+    );
+    test_directed_storable_graph_parallel_edges!(
+        DirectedTestGraph::<(), (), DirNodeId, DirEdgeId>::new,
+    );
 }

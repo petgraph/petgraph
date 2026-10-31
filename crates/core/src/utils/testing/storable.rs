@@ -1,15 +1,109 @@
 /// Generates a suite of tests for [`StorableGraph`][crate::graph::storable::StorableGraph]
-/// implementations, which are also [`DirectedGraph`][crate::graph::DirectedGraph]s.
+/// implementations, which are also [`DirectedGraph`][crate::graph::DirectedGraph]s. It runs on the
+/// [`DEFAULT_TEST_GRAPH`][crate::utils::testing::__common::DEFAULT_TEST_GRAPH] and
+/// [`ISOLATED_TEST_GRAPH`][crate::utils::testing::__common::ISOLATED_TEST_GRAPH].
 ///
 /// For the expected invariants and the arguments of this macro, see
-/// [`__test_storable_graph_inner`][crate::__test_storable_graph_inner].
+/// [`__test_storable_graph_inner`][crate::__test_storable_graph_inner]. To run the suite on other
+/// test graphs, use
+/// [`__test_directed_storable_graph_inner`][crate::__test_directed_storable_graph_inner].
 ///
 /// For a reference usage, see the tests in [`crate::utils::test_graphs::directed`].
 #[macro_export]
 macro_rules! test_directed_storable_graph {
     ($graph_constructor:expr,) => {
+        mod storable_graph_macro {
+            mod default {
+                #[allow(unused_imports)]
+                use super::super::*;
+
+                $crate::__test_directed_storable_graph_inner!(
+                    $graph_constructor,
+                    $crate::utils::testing::__common::DEFAULT_TEST_GRAPH,
+                );
+            }
+
+            mod isolated {
+                #[allow(unused_imports)]
+                use super::super::*;
+
+                $crate::__test_directed_storable_graph_inner!(
+                    $graph_constructor,
+                    $crate::utils::testing::__common::ISOLATED_TEST_GRAPH,
+                );
+            }
+        }
+    };
+}
+
+/// Generates a suite of tests for [`StorableGraph`][crate::graph::storable::StorableGraph]
+/// implementations, which are also [`DirectedGraph`][crate::graph::DirectedGraph]s and support
+/// self-loops. It runs on the
+/// [`LOOP_TEST_GRAPH`][crate::utils::testing::__common::LOOP_TEST_GRAPH].
+///
+/// For the expected invariants and the arguments of this macro, see
+/// [`__test_storable_graph_inner`][crate::__test_storable_graph_inner]. To run the suite on other
+/// test graphs, use
+/// [`__test_directed_storable_graph_inner`][crate::__test_directed_storable_graph_inner].
+///
+/// For a reference usage, see the tests in [`crate::utils::test_graphs::directed`].
+#[macro_export]
+macro_rules! test_directed_storable_graph_self_loops {
+    ($graph_constructor:expr,) => {
+        mod storable_graph_macro_self_loops {
+            #[allow(unused_imports)]
+            use super::*;
+
+            $crate::__test_directed_storable_graph_inner!(
+                $graph_constructor,
+                $crate::utils::testing::__common::LOOP_TEST_GRAPH,
+            );
+        }
+    };
+}
+
+/// Generates a suite of tests for [`StorableGraph`][crate::graph::storable::StorableGraph]
+/// implementations, which are also [`DirectedGraph`][crate::graph::DirectedGraph]s and support
+/// self-loops and parallel edges. It runs on the
+/// [`MULTI_TEST_GRAPH`][crate::utils::testing::__common::MULTI_TEST_GRAPH].
+///
+/// For the expected invariants and the arguments of this macro, see
+/// [`__test_storable_graph_inner`][crate::__test_storable_graph_inner]. To run the suite on other
+/// test graphs, use
+/// [`__test_directed_storable_graph_inner`][crate::__test_directed_storable_graph_inner].
+///
+/// For a reference usage, see the tests in [`crate::utils::test_graphs::directed`].
+#[macro_export]
+macro_rules! test_directed_storable_graph_parallel_edges {
+    ($graph_constructor:expr,) => {
+        mod storable_graph_macro_parallel_edges {
+            #[allow(unused_imports)]
+            use super::*;
+
+            $crate::__test_directed_storable_graph_inner!(
+                $graph_constructor,
+                $crate::utils::testing::__common::MULTI_TEST_GRAPH,
+            );
+        }
+    };
+}
+
+/// Generates a suite of tests for [`StorableGraph`][crate::graph::storable::StorableGraph]
+/// implementations, which are also [`DirectedGraph`][crate::graph::DirectedGraph]s. It runs on the
+/// given test graph.
+///
+/// For the expected invariants and the arguments `$graph_constructor` and `$test_graph`, see
+/// [`__test_storable_graph_inner`][crate::__test_storable_graph_inner].
+///
+/// Prefer using [`test_directed_storable_graph`][crate::test_directed_storable_graph] to run
+/// the suite on the default test graphs.
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __test_directed_storable_graph_inner {
+    ($graph_constructor:expr, $test_graph:expr,) => {
         $crate::__test_storable_graph_inner!(
             $graph_constructor,
+            $test_graph,
             |graph| $crate::graph::DirectedGraph::nodes(graph)
                 .map(|node| node.id)
                 .collect(),
@@ -21,17 +115,111 @@ macro_rules! test_directed_storable_graph {
 }
 
 /// Generates a suite of tests for [`StorableGraph`][crate::graph::storable::StorableGraph]
-/// implementations, which are also [`UndirectedGraph`][crate::graph::UndirectedGraph]s.
+/// implementations, which are also [`UndirectedGraph`][crate::graph::UndirectedGraph]s. It runs on
+/// the [`DEFAULT_TEST_GRAPH`][crate::utils::testing::__common::DEFAULT_TEST_GRAPH] and
+/// [`ISOLATED_TEST_GRAPH`][crate::utils::testing::__common::ISOLATED_TEST_GRAPH].
 ///
 /// For the expected invariants and the arguments of this macro, see
-/// [`__test_storable_graph_inner`][crate::__test_storable_graph_inner].
+/// [`__test_storable_graph_inner`][crate::__test_storable_graph_inner]. To run the suite on other
+/// test graphs, use
+/// [`__test_undirected_storable_graph_inner`][crate::__test_undirected_storable_graph_inner].
 ///
 /// For a reference usage, see the tests in [`crate::utils::test_graphs::undirected`].
 #[macro_export]
 macro_rules! test_undirected_storable_graph {
     ($graph_constructor:expr,) => {
+        mod storable_graph_macro {
+            mod default {
+                #[allow(unused_imports)]
+                use super::super::*;
+
+                $crate::__test_undirected_storable_graph_inner!(
+                    $graph_constructor,
+                    $crate::utils::testing::__common::DEFAULT_TEST_GRAPH,
+                );
+            }
+
+            mod isolated {
+                #[allow(unused_imports)]
+                use super::super::*;
+
+                $crate::__test_undirected_storable_graph_inner!(
+                    $graph_constructor,
+                    $crate::utils::testing::__common::ISOLATED_TEST_GRAPH,
+                );
+            }
+        }
+    };
+}
+
+/// Generates a suite of tests for [`StorableGraph`][crate::graph::storable::StorableGraph]
+/// implementations, which are also [`UndirectedGraph`][crate::graph::UndirectedGraph]s and support
+/// self-loops. It runs on the
+/// [`LOOP_TEST_GRAPH`][crate::utils::testing::__common::LOOP_TEST_GRAPH].
+///
+/// For the expected invariants and the arguments of this macro, see
+/// [`__test_storable_graph_inner`][crate::__test_storable_graph_inner]. To run the suite on other
+/// test graphs, use
+/// [`__test_undirected_storable_graph_inner`][crate::__test_undirected_storable_graph_inner].
+///
+/// For a reference usage, see the tests in [`crate::utils::test_graphs::undirected`].
+#[macro_export]
+macro_rules! test_undirected_storable_graph_self_loops {
+    ($graph_constructor:expr,) => {
+        mod storable_graph_macro_self_loops {
+            #[allow(unused_imports)]
+            use super::*;
+
+            $crate::__test_undirected_storable_graph_inner!(
+                $graph_constructor,
+                $crate::utils::testing::__common::LOOP_TEST_GRAPH,
+            );
+        }
+    };
+}
+
+/// Generates a suite of tests for [`StorableGraph`][crate::graph::storable::StorableGraph]
+/// implementations, which are also [`UndirectedGraph`][crate::graph::UndirectedGraph]s and support
+/// self-loops and parallel edges. It runs on the
+/// [`MULTI_TEST_GRAPH`][crate::utils::testing::__common::MULTI_TEST_GRAPH].
+///
+/// For the expected invariants and the arguments of this macro, see
+/// [`__test_storable_graph_inner`][crate::__test_storable_graph_inner]. To run the suite on other
+/// test graphs, use
+/// [`__test_undirected_storable_graph_inner`][crate::__test_undirected_storable_graph_inner].
+///
+/// For a reference usage, see the tests in [`crate::utils::test_graphs::undirected`].
+#[macro_export]
+macro_rules! test_undirected_storable_graph_parallel_edges {
+    ($graph_constructor:expr,) => {
+        mod storable_graph_macro_parallel_edges {
+            #[allow(unused_imports)]
+            use super::*;
+
+            $crate::__test_undirected_storable_graph_inner!(
+                $graph_constructor,
+                $crate::utils::testing::__common::MULTI_TEST_GRAPH,
+            );
+        }
+    };
+}
+
+/// Generates a suite of tests for [`StorableGraph`][crate::graph::storable::StorableGraph]
+/// implementations, which are also [`UndirectedGraph`][crate::graph::UndirectedGraph]s. It runs on
+/// the given test graph.
+///
+/// For the expected invariants and the arguments `$graph_constructor` and `$test_graph`, see
+/// [`__test_storable_graph_inner`][crate::__test_storable_graph_inner].
+///
+/// Prefer using [`test_undirected_storable_graph`][crate::test_undirected_storable_graph] to run
+/// the suite on the default test graphs.
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __test_undirected_storable_graph_inner {
+    ($graph_constructor:expr, $test_graph:expr,) => {
         $crate::__test_storable_graph_inner!(
             $graph_constructor,
+            $test_graph,
             |graph| $crate::graph::UndirectedGraph::nodes(graph)
                 .map(|node| node.id)
                 .collect(),
@@ -43,12 +231,14 @@ macro_rules! test_undirected_storable_graph {
 }
 
 /// Generates a suite of tests for [`StorableGraph`][crate::graph::storable::StorableGraph]
-/// implementations.
+/// implementations, which runs on the given test graph.
 ///
 /// At least one test is generated for each method in the
 /// [`StorableGraph`][crate::graph::storable::StorableGraph] trait, which checks every method of the
 /// returned [`VisitContainer`][crate::graph::storable::VisitContainer] or
-/// [`DataContainer`][crate::graph::storable::DataContainer].
+/// [`DataContainer`][crate::graph::storable::DataContainer]. The containers are checked with the
+/// ids of the test graph, so the suite can be run on any test graph that the graph type is able to
+/// represent.
 ///
 /// The following invariants are expected from the graph implementation:
 /// - If the most recently added node or edge is removed, its ID will no longer be valid.
@@ -60,6 +250,8 @@ macro_rules! test_undirected_storable_graph {
 /// The arguments to this macro are as follows (`G` is used to denote the graph type being tested):
 /// - `$graph_constructor`: `impl Fn() -> G`. An expression that constructs a new instance of the
 ///   graph type to be tested. The generated graph must be empty (e.g. `G::new()`).
+/// - `$test_graph`: [`TestGraph`][crate::utils::testing::__common::TestGraph]. The test graph,
+///   which is built by adding its nodes and edges to the graphs returned by `$graph_constructor`.
 /// - `$node_ids`: `fn(&G) -> Vec<G::NodeId>`. Returns the ids of all nodes in the graph.
 /// - `$edge_ids`: `fn(&G) -> Vec<G::EdgeId>`. Returns the ids of all edges in the graph.
 ///
@@ -68,54 +260,55 @@ macro_rules! test_undirected_storable_graph {
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __test_storable_graph_inner {
-    ($graph_constructor:expr, $node_ids:expr, $edge_ids:expr,) => {
-        mod storable_graph_tests {
-            #[allow(unused_imports)]
-            use super::*;
+    ($graph_constructor:expr, $test_graph:expr, $node_ids:expr, $edge_ids:expr,) => {
+        #[test]
+        fn test_node_visit_container() {
+            $crate::utils::testing::storable::__private_testing::test_node_visit_container_inner(
+                $graph_constructor,
+                $test_graph,
+            );
+        }
 
-            #[test]
-            fn test_node_visit_container() {
-                $crate::utils::testing::storable::__private_testing::test_node_visit_container_inner(
-                    $graph_constructor,
-                );
-            }
+        #[test]
+        fn test_node_data_container() {
+            $crate::utils::testing::storable::__private_testing::test_node_data_container_inner(
+                $graph_constructor,
+                $test_graph,
+            );
+        }
 
-            #[test]
-            fn test_node_data_container() {
-                $crate::utils::testing::storable::__private_testing::test_node_data_container_inner(
-                    $graph_constructor,
-                );
-            }
+        #[test]
+        fn test_edge_visit_container() {
+            $crate::utils::testing::storable::__private_testing::test_edge_visit_container_inner(
+                $graph_constructor,
+                $test_graph,
+            );
+        }
 
-            #[test]
-            fn test_edge_visit_container() {
-                $crate::utils::testing::storable::__private_testing::test_edge_visit_container_inner(
-                    $graph_constructor,
-                );
-            }
+        #[test]
+        fn test_edge_data_container() {
+            $crate::utils::testing::storable::__private_testing::test_edge_data_container_inner(
+                $graph_constructor,
+                $test_graph,
+            );
+        }
 
-            #[test]
-            fn test_edge_data_container() {
-                $crate::utils::testing::storable::__private_testing::test_edge_data_container_inner(
-                    $graph_constructor,
-                );
-            }
+        #[test]
+        fn test_containers_after_graph_edits() {
+            $crate::utils::testing::storable::__private_testing::test_containers_after_graph_edits_inner(
+                $graph_constructor,
+                $test_graph,
+            );
+        }
 
-            #[test]
-            fn test_containers_after_graph_edits() {
-                $crate::utils::testing::storable::__private_testing::test_containers_after_graph_edits_inner(
-                    $graph_constructor,
-                );
-            }
-
-            #[test]
-            fn test_container_capacity() {
-                $crate::utils::testing::storable::__private_testing::test_container_capacity_inner(
-                    $graph_constructor,
-                    $node_ids,
-                    $edge_ids,
-                );
-            }
+        #[test]
+        fn test_container_capacity() {
+            $crate::utils::testing::storable::__private_testing::test_container_capacity_inner(
+                $graph_constructor,
+                $test_graph,
+                $node_ids,
+                $edge_ids,
+            );
         }
     };
 }
@@ -132,7 +325,7 @@ pub mod __private_testing {
             storable::{DataContainer, StorableGraph, VisitContainer},
         },
         id::Id,
-        utils::testing::DEFAULT_TEST_GRAPH,
+        utils::testing::TestGraph,
     };
 
     /// The default value passed when creating data containers.
@@ -179,16 +372,12 @@ pub mod __private_testing {
         }
     }
 
-    /// Checks all methods of a [`VisitContainer`] for the given ids, which have to contain at
-    /// least three ids.
+    /// Checks all methods of a [`VisitContainer`] for the given ids.
     fn check_visit_container<I: Id, C: VisitContainer<I>>(
         mut container: C,
         ids: &[I],
         method_name: &'static str,
     ) {
-        assert!(ids.len() >= 3);
-        let last = ids.len() - 1;
-
         assert_visited(
             &container,
             ids,
@@ -197,41 +386,49 @@ pub mod __private_testing {
             "for a new container",
         );
 
-        container.mark_visited(ids[0]);
-        container.mark_visited(ids[2]);
+        let Some(&first_id) = ids.first() else {
+            return;
+        };
+        let last = ids.len() - 1;
+
+        for &id in ids.iter().step_by(2) {
+            container.mark_visited(id);
+        }
         assert_visited(
             &container,
             ids,
-            |index| index == 0 || index == 2,
+            |index| index % 2 == 0,
             method_name,
-            "after marking ids 0 and 2 as visited",
+            "after marking every second id as visited",
         );
 
-        container.mark_visited(ids[0]);
+        container.mark_visited(first_id);
         assert_visited(
             &container,
             ids,
-            |index| index == 0 || index == 2,
+            |index| index % 2 == 0,
             method_name,
             "after marking id 0 as visited twice",
         );
 
-        container.mark_unvisited(ids[0]);
+        container.mark_unvisited(first_id);
         assert_visited(
             &container,
             ids,
-            |index| index == 2,
+            |index| index != 0 && index % 2 == 0,
             method_name,
             "after marking id 0 as unvisited",
         );
 
-        container.mark_unvisited(ids[1]);
+        for &id in ids.iter().skip(1).step_by(2) {
+            container.mark_unvisited(id);
+        }
         assert_visited(
             &container,
             ids,
-            |index| index == 2,
+            |index| index != 0 && index % 2 == 0,
             method_name,
-            "after marking the never visited id 1 as unvisited",
+            "after marking the never visited ids as unvisited",
         );
 
         for &id in ids {
@@ -283,15 +480,13 @@ pub mod __private_testing {
         );
     }
 
-    /// Checks all methods of a [`DataContainer`] for the given ids, which have to contain at
-    /// least four ids. The container has to be created with [`DEFAULT_DATA`] as default value.
+    /// Checks all methods of a [`DataContainer`] for the given ids. The container has to be created
+    /// with [`DEFAULT_DATA`] as default value.
     fn check_data_container<I: Id, C: DataContainer<I, usize>>(
         mut container: C,
         ids: &[I],
         method_name: &'static str,
     ) {
-        assert!(ids.len() >= 4);
-
         assert_data(
             &container,
             ids,
@@ -300,14 +495,19 @@ pub mod __private_testing {
             "for a new container",
         );
 
+        let Some(&first_id) = ids.first() else {
+            return;
+        };
+        let last = ids.len() - 1;
+
         // Writing through `get_mut` must not change the default value of the other ids.
-        *container.get_mut(ids[1]) = 7;
+        *container.get_mut(ids[last]) = 7;
         assert_data(
             &container,
             ids,
-            |index| if index == 1 { 7 } else { DEFAULT_DATA },
+            |index| if index == last { 7 } else { DEFAULT_DATA },
             method_name,
-            "after writing to id 1 via DataContainer::get_mut()",
+            "after writing to the last id via DataContainer::get_mut()",
         );
 
         for (index, &id) in ids.iter().enumerate() {
@@ -321,7 +521,7 @@ pub mod __private_testing {
             "after inserting data for all ids",
         );
 
-        *container.get_mut(ids[0]) += 1;
+        *container.get_mut(first_id) += 1;
         assert_data(
             &container,
             ids,
@@ -330,43 +530,49 @@ pub mod __private_testing {
             "after modifying id 0 via DataContainer::get_mut()",
         );
 
-        container.insert(ids[2], 1000);
+        container.insert(ids[last], 1000);
         assert_data(
             &container,
             ids,
-            |index| match index {
-                0 => 1,
-                2 => 1000,
-                _ => index * 10,
+            |index| {
+                if index == last {
+                    1000
+                } else if index == 0 {
+                    1
+                } else {
+                    index * 10
+                }
             },
             method_name,
-            "after replacing the data of id 2",
+            "after replacing the data of the last id",
         );
 
-        container.remove(ids[2]);
+        let expected_after_removal = |index| {
+            if index == last {
+                DEFAULT_DATA
+            } else if index == 0 {
+                1
+            } else {
+                index * 10
+            }
+        };
+
+        container.remove(ids[last]);
         assert_data(
             &container,
             ids,
-            |index| match index {
-                0 => 1,
-                2 => DEFAULT_DATA,
-                _ => index * 10,
-            },
+            expected_after_removal,
             method_name,
-            "after removing the data of id 2",
+            "after removing the data of the last id",
         );
 
-        container.remove(ids[2]);
+        container.remove(ids[last]);
         assert_data(
             &container,
             ids,
-            |index| match index {
-                0 => 1,
-                2 => DEFAULT_DATA,
-                _ => index * 10,
-            },
+            expected_after_removal,
             method_name,
-            "after removing the data of id 2 twice",
+            "after removing the data of the last id twice",
         );
 
         container.clear();
@@ -378,13 +584,13 @@ pub mod __private_testing {
             "after clearing the container",
         );
 
-        container.insert(ids[3], 3);
+        container.insert(first_id, 3);
         assert_data(
             &container,
             ids,
-            |index| if index == 3 { 3 } else { DEFAULT_DATA },
+            |index| if index == 0 { 3 } else { DEFAULT_DATA },
             method_name,
-            "after inserting data for id 3 after clearing the container",
+            "after inserting data for id 0 after clearing the container",
         );
     }
 
@@ -434,8 +640,9 @@ pub mod __private_testing {
         G: StorableGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = ()>,
     >(
         graph_constructor: fn() -> G,
+        test_graph: TestGraph,
     ) {
-        let (graph, nodes, _) = DEFAULT_TEST_GRAPH.build(graph_constructor);
+        let (graph, nodes, _) = test_graph.build(graph_constructor);
 
         check_visit_container(
             StorableGraph::node_visit_container(&graph),
@@ -454,8 +661,9 @@ pub mod __private_testing {
         G: StorableGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = ()>,
     >(
         graph_constructor: fn() -> G,
+        test_graph: TestGraph,
     ) {
-        let (graph, nodes, _) = DEFAULT_TEST_GRAPH.build(graph_constructor);
+        let (graph, nodes, _) = test_graph.build(graph_constructor);
 
         check_data_container(
             StorableGraph::node_data_container(&graph, DEFAULT_DATA),
@@ -474,8 +682,9 @@ pub mod __private_testing {
         G: StorableGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = ()>,
     >(
         graph_constructor: fn() -> G,
+        test_graph: TestGraph,
     ) {
-        let (graph, _, edges) = DEFAULT_TEST_GRAPH.build(graph_constructor);
+        let (graph, _, edges) = test_graph.build(graph_constructor);
 
         check_visit_container(
             StorableGraph::edge_visit_container(&graph),
@@ -494,8 +703,9 @@ pub mod __private_testing {
         G: StorableGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = ()>,
     >(
         graph_constructor: fn() -> G,
+        test_graph: TestGraph,
     ) {
-        let (graph, _, edges) = DEFAULT_TEST_GRAPH.build(graph_constructor);
+        let (graph, _, edges) = test_graph.build(graph_constructor);
 
         check_data_container(
             StorableGraph::edge_data_container(&graph, DEFAULT_DATA),
@@ -514,29 +724,30 @@ pub mod __private_testing {
         G: StorableGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = ()>,
     >(
         graph_constructor: fn() -> G,
+        test_graph: TestGraph,
     ) {
-        let (mut graph, nodes, edges) = DEFAULT_TEST_GRAPH.build(graph_constructor);
+        let (mut graph, nodes, edges) = test_graph.build(graph_constructor);
+        let mut current_edges = edges;
 
         // The newest edge and node are removed, as some graph implementations might not have
         // stable ids, but the newest ones added are likely to be removable without another edge or
         // node taking their ids.
-        graph.remove_edge(edges[3]).unwrap();
-        graph.remove_node(nodes[4]).unwrap();
+        if let Some(last_edge) = current_edges.pop() {
+            graph.remove_edge(last_edge).unwrap();
+        }
+        let removed_node = graph.add_node(()).unwrap();
+        graph.remove_node(removed_node).unwrap();
 
         // Depending on the implementation, the new node might reuse the id of the removed node or
         // get an id beyond the ids of the original nodes. The containers have to support both.
         let new_node = graph.add_node(()).unwrap();
-        let new_incoming_edge = graph.add_edge(nodes[3], new_node, ()).unwrap();
-        let new_outgoing_edge = graph.add_edge(new_node, nodes[0], ()).unwrap();
+        if let [first_node, .., last_node] = nodes[..] {
+            current_edges.push(graph.add_edge(last_node, new_node, ()).unwrap());
+            current_edges.push(graph.add_edge(new_node, first_node, ()).unwrap());
+        }
 
-        let current_nodes = [nodes[0], nodes[1], nodes[2], nodes[3], new_node];
-        let current_edges = [
-            edges[0],
-            edges[1],
-            edges[2],
-            new_incoming_edge,
-            new_outgoing_edge,
-        ];
+        let mut current_nodes = nodes;
+        current_nodes.push(new_node);
 
         check_visit_container(
             StorableGraph::node_visit_container(&graph),
@@ -564,19 +775,19 @@ pub mod __private_testing {
         G: StorableGraph + EditableGraph<OwnedNodeData = (), OwnedEdgeData = ()>,
     >(
         graph_constructor: fn() -> G,
+        test_graph: TestGraph,
         node_ids: fn(&G) -> Vec<G::NodeId>,
         edge_ids: fn(&G) -> Vec<G::EdgeId>,
     ) {
-        let (mut graph, nodes, _) = DEFAULT_TEST_GRAPH.build(graph_constructor);
+        let (mut graph, nodes, edges) = test_graph.build(graph_constructor);
+        let Some(&first_node) = nodes.first() else {
+            return;
+        };
 
-        // These edges are not incident to node 0, so that enough edges remain after removing it.
-        graph.add_edge(nodes[2], nodes[4], ()).unwrap();
-        graph.add_edge(nodes[4], nodes[1], ()).unwrap();
-
-        // Node 0 is the oldest node and incident to the two oldest edges. For graph
-        // implementations with stable ids, removing it leaves gaps in the ids, so that the largest
-        // remaining ids are larger than the number of nodes and edges.
-        graph.remove_node(nodes[0]).unwrap();
+        // Node 0 is the oldest node. For graph implementations with stable ids, removing it leaves
+        // gaps in the ids, so that the largest remaining ids are larger than the number of nodes
+        // and edges.
+        graph.remove_node(first_node).unwrap();
 
         // Other graph implementations might change the ids of the remaining nodes and edges, so
         // the current ids are obtained from the graph.
@@ -584,12 +795,14 @@ pub mod __private_testing {
         let current_edges = edge_ids(&graph);
         assert_eq!(
             current_nodes.len(),
-            DEFAULT_TEST_GRAPH.node_count - 1,
+            test_graph.node_count - 1,
             "unexpected number of node ids returned by the graph after removing node 0"
         );
         assert_eq!(
             current_edges.len(),
-            DEFAULT_TEST_GRAPH.edge_count(),
+            test_graph
+                .expected_edges(&edges, |source, target| source != 0 && target != 0)
+                .count(),
             "unexpected number of edge ids returned by the graph after removing node 0"
         );
 
