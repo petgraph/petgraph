@@ -55,7 +55,7 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>> MatrixGraphExtras<N> for DiMatrixGra
         node_a: MatrixGraphNodeId,
         node_b: MatrixGraphNodeId,
     ) -> Option<usize> {
-        if node_a.0 >= self.node_capacity || node_b.0 >= self.node_capacity {
+        if node_a.0 >= self.edge_capacity_in_nodes || node_b.0 >= self.edge_capacity_in_nodes {
             None
         } else {
             Some(self.to_edge_position_unchecked(node_a, node_b))
@@ -68,21 +68,21 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>> MatrixGraphExtras<N> for DiMatrixGra
         node_a: MatrixGraphNodeId,
         node_b: MatrixGraphNodeId,
     ) -> usize {
-        to_flat_square_matrix_position(node_a.0, node_b.0, self.node_capacity)
+        to_flat_square_matrix_position(node_a.0, node_b.0, self.edge_capacity_in_nodes)
     }
 
     #[inline]
-    fn extend_capacity_for_node(&mut self, new_node_capacity: usize, exact: bool) {
-        let old_node_capacity = self.node_capacity;
+    fn extend_capacity_for_node(&mut self, new_edge_capacity_in_nodes: usize, exact: bool) {
+        let old_edge_capacity_in_nodes = self.edge_capacity_in_nodes;
 
-        if old_node_capacity >= new_node_capacity {
+        if old_edge_capacity_in_nodes >= new_edge_capacity_in_nodes {
             return;
         }
 
-        self.node_capacity = extend_flat_square_matrix(
+        self.edge_capacity_in_nodes = extend_flat_square_matrix(
             &mut self.flattened_edge_data,
-            old_node_capacity,
-            new_node_capacity,
+            old_edge_capacity_in_nodes,
+            new_edge_capacity_in_nodes,
             exact,
         );
     }
@@ -96,7 +96,7 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>> MatrixGraphExtras<N> for DiMatrixGra
         // If the node capacity is larger or equal to the node id, then there cannot exist any edges
         // incident to the node. But the node might still be in the node_data (i.e. the
         // graph) as an isolated node
-        if node.0 < self.node_capacity {
+        if node.0 < self.edge_capacity_in_nodes {
             for (id, _) in &self.node_data {
                 let position = self.to_edge_position(node, MatrixGraphNodeId(id));
                 if let Some(pos) = position {
@@ -149,18 +149,18 @@ const fn to_flat_square_matrix_position(row: usize, column: usize, width: usize)
 #[inline]
 fn extend_flat_square_matrix<T: Default>(
     node_adjacencies: &mut Vec<T>,
-    old_node_capacity: usize,
-    new_node_capacity: usize,
+    old_edge_capacity_in_nodes: usize,
+    new_edge_capacity_in_nodes: usize,
     exact: bool,
 ) -> usize {
     // Grow the capacity by exponential steps to avoid repeated allocations.
     // Disabled for the with_capacity constructor.
-    let new_node_capacity = if exact {
-        new_node_capacity
+    let new_edge_capacity_in_nodes = if exact {
+        new_edge_capacity_in_nodes
     } else {
         const MIN_CAPACITY: usize = 4;
         cmp::max(
-            new_node_capacity
+            new_edge_capacity_in_nodes
                 .checked_next_power_of_two()
                 .unwrap_or_else(|| panic!("Matrix capacity overflow")),
             MIN_CAPACITY,
@@ -171,35 +171,35 @@ fn extend_flat_square_matrix<T: Default>(
     // small matrices a bit faster to work with.
 
     node_adjacencies.resize_with(
-        new_node_capacity
+        new_edge_capacity_in_nodes
             .checked_pow(2)
             .unwrap_or_else(|| panic!("Matrix capacity overflow")),
         || T::default(),
     );
-    for current in (1..old_node_capacity).rev() {
-        let pos = current * old_node_capacity;
+    for current in (1..old_edge_capacity_in_nodes).rev() {
+        let pos = current * old_edge_capacity_in_nodes;
         let new_pos = current
-            .checked_mul(new_node_capacity)
+            .checked_mul(new_edge_capacity_in_nodes)
             .unwrap_or_else(|| panic!("Matrix capacity overflow"));
         // Move the slices directly if they do not overlap with their new position
-        if pos + old_node_capacity <= new_pos {
-            debug_assert!(pos + old_node_capacity < node_adjacencies.len());
-            debug_assert!(new_pos + old_node_capacity < node_adjacencies.len());
+        if pos + old_edge_capacity_in_nodes <= new_pos {
+            debug_assert!(pos + old_edge_capacity_in_nodes < node_adjacencies.len());
+            debug_assert!(new_pos + old_edge_capacity_in_nodes < node_adjacencies.len());
             let ptr = node_adjacencies.as_mut_ptr();
-            // SAFETY: pos + old_node_capacity <= new_pos, so this won't overlap
+            // SAFETY: pos + old_edge_capacity_in_nodes <= new_pos, so this won't overlap
             unsafe {
                 let old = ptr.add(pos);
                 let new = ptr.add(new_pos);
-                core::ptr::swap_nonoverlapping(old, new, old_node_capacity);
+                core::ptr::swap_nonoverlapping(old, new, old_edge_capacity_in_nodes);
             }
         } else {
-            for i in (0..old_node_capacity).rev() {
+            for i in (0..old_edge_capacity_in_nodes).rev() {
                 node_adjacencies.swap(pos + i, new_pos + i);
             }
         }
     }
 
-    new_node_capacity
+    new_edge_capacity_in_nodes
 }
 
 impl<N, E, Null: NicheWrapper<Wrapped = E>> Graph for DiMatrixGraph<N, E, Null> {
@@ -285,7 +285,7 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>> DirectedGraph for DiMatrixGraph<N, E
         EdgeIter {
             edges: self.flattened_edge_data.iter(),
             current_edge_tuple: (0, 0),
-            node_capacity: self.node_capacity,
+            edge_capacity_in_nodes: self.edge_capacity_in_nodes,
         }
         .map(|(source, target, data)| EdgeRef::<Self> {
             id: DiMatrixEdgeId::new(source, target),
@@ -300,7 +300,7 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>> DirectedGraph for DiMatrixGraph<N, E
         EdgeIterMut {
             edges: self.flattened_edge_data.iter_mut(),
             current_edge_tuple: (0, 0),
-            node_capacity: self.node_capacity,
+            edge_capacity_in_nodes: self.edge_capacity_in_nodes,
         }
         .map(|(source, target, data)| EdgeMut::<Self> {
             id: DiMatrixEdgeId::new(source, target),
@@ -356,12 +356,12 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>> DirectedGraph for DiMatrixGraph<N, E
     // Degree
     #[inline]
     fn in_degree(&self, node: Self::NodeId) -> usize {
-        incoming_neighbor_iter(&self.flattened_edge_data, node, self.node_capacity).count()
+        incoming_neighbor_iter(&self.flattened_edge_data, node, self.edge_capacity_in_nodes).count()
     }
 
     #[inline]
     fn out_degree(&self, node: Self::NodeId) -> usize {
-        outgoing_neighbor_iter(&self.flattened_edge_data, node, self.node_capacity).count()
+        outgoing_neighbor_iter(&self.flattened_edge_data, node, self.edge_capacity_in_nodes).count()
     }
 
     #[inline]
@@ -372,7 +372,7 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>> DirectedGraph for DiMatrixGraph<N, E
     // Edges by direction
     #[inline]
     fn incoming_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
-        incoming_neighbor_iter(&self.flattened_edge_data, node, self.node_capacity).map(
+        incoming_neighbor_iter(&self.flattened_edge_data, node, self.edge_capacity_in_nodes).map(
             move |(source, data)| EdgeRef::<Self> {
                 id: DiMatrixEdgeId::new(source, node),
                 source,
@@ -387,19 +387,22 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>> DirectedGraph for DiMatrixGraph<N, E
         &mut self,
         node: Self::NodeId,
     ) -> impl Iterator<Item = EdgeMut<'_, Self>> {
-        incoming_neighbor_iter_mut(&mut self.flattened_edge_data, node, self.node_capacity).map(
-            move |(source, data)| EdgeMut::<Self> {
-                id: DiMatrixEdgeId::new(source, node),
-                source,
-                target: node,
-                data,
-            },
+        incoming_neighbor_iter_mut(
+            &mut self.flattened_edge_data,
+            node,
+            self.edge_capacity_in_nodes,
         )
+        .map(move |(source, data)| EdgeMut::<Self> {
+            id: DiMatrixEdgeId::new(source, node),
+            source,
+            target: node,
+            data,
+        })
     }
 
     #[inline]
     fn outgoing_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
-        outgoing_neighbor_iter(&self.flattened_edge_data, node, self.node_capacity).map(
+        outgoing_neighbor_iter(&self.flattened_edge_data, node, self.edge_capacity_in_nodes).map(
             move |(target, data)| EdgeRef::<Self> {
                 id: DiMatrixEdgeId::new(node, target),
                 source: node,
@@ -414,19 +417,22 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>> DirectedGraph for DiMatrixGraph<N, E
         &mut self,
         node: Self::NodeId,
     ) -> impl Iterator<Item = EdgeMut<'_, Self>> {
-        outgoing_neighbor_iter_mut(&mut self.flattened_edge_data, node, self.node_capacity).map(
-            move |(target, data)| EdgeMut::<Self> {
-                id: DiMatrixEdgeId::new(node, target),
-                source: node,
-                target,
-                data,
-            },
+        outgoing_neighbor_iter_mut(
+            &mut self.flattened_edge_data,
+            node,
+            self.edge_capacity_in_nodes,
         )
+        .map(move |(target, data)| EdgeMut::<Self> {
+            id: DiMatrixEdgeId::new(node, target),
+            source: node,
+            target,
+            data,
+        })
     }
 
     #[inline]
     fn incident_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
-        neighbor_iter(&self.flattened_edge_data, node, self.node_capacity).map(
+        neighbor_iter(&self.flattened_edge_data, node, self.edge_capacity_in_nodes).map(
             move |(source, target, data)| EdgeRef::<Self> {
                 id: DiMatrixEdgeId::new(source, target),
                 source,
@@ -441,32 +447,35 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>> DirectedGraph for DiMatrixGraph<N, E
         &mut self,
         node: Self::NodeId,
     ) -> impl Iterator<Item = EdgeMut<'_, Self>> {
-        neighbor_iter_mut(&mut self.flattened_edge_data, node, self.node_capacity).map(
-            move |(source, target, data)| EdgeMut::<Self> {
-                id: DiMatrixEdgeId::new(source, target),
-                source,
-                target,
-                data,
-            },
+        neighbor_iter_mut(
+            &mut self.flattened_edge_data,
+            node,
+            self.edge_capacity_in_nodes,
         )
+        .map(move |(source, target, data)| EdgeMut::<Self> {
+            id: DiMatrixEdgeId::new(source, target),
+            source,
+            target,
+            data,
+        })
     }
 
     // Adjacency
     #[inline]
     fn predecessors(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
-        incoming_neighbor_iter(&self.flattened_edge_data, node, self.node_capacity)
+        incoming_neighbor_iter(&self.flattened_edge_data, node, self.edge_capacity_in_nodes)
             .map(|(source, _)| source)
     }
 
     #[inline]
     fn successors(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
-        outgoing_neighbor_iter(&self.flattened_edge_data, node, self.node_capacity)
+        outgoing_neighbor_iter(&self.flattened_edge_data, node, self.edge_capacity_in_nodes)
             .map(|(target, _)| target)
     }
 
     #[inline]
     fn adjacencies(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
-        neighbor_iter(&self.flattened_edge_data, node, self.node_capacity)
+        neighbor_iter(&self.flattened_edge_data, node, self.edge_capacity_in_nodes)
             .map(move |(node_a, node_b, _)| if node == node_a { node_b } else { node_a })
     }
 
@@ -590,7 +599,7 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>> DirectedGraph for DiMatrixGraph<N, E
         lhs: Self::NodeId,
         rhs: Self::NodeId,
     ) -> impl Iterator<Item = EdgeMut<'_, Self>> {
-        if lhs.0 >= self.node_capacity || rhs.0 >= self.node_capacity {
+        if lhs.0 >= self.edge_capacity_in_nodes || rhs.0 >= self.edge_capacity_in_nodes {
             return Either::Left(None.into_iter());
         }
 
@@ -688,7 +697,7 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>> DirectedGraph for DiMatrixGraph<N, E
 struct EdgeIter<'a, It: Iterator<Item = &'a Null>, Null: NicheWrapper + 'a> {
     edges: It,
     current_edge_tuple: (usize, usize),
-    node_capacity: usize,
+    edge_capacity_in_nodes: usize,
 }
 
 impl<'a, It: Iterator<Item = &'a Null>, Null: NicheWrapper> Iterator for EdgeIter<'a, It, Null> {
@@ -698,7 +707,7 @@ impl<'a, It: Iterator<Item = &'a Null>, Null: NicheWrapper> Iterator for EdgeIte
         for edge in self.edges.by_ref() {
             let current_edge_tuple = self.current_edge_tuple;
             self.current_edge_tuple.1 += 1;
-            if self.current_edge_tuple.1 == self.node_capacity {
+            if self.current_edge_tuple.1 == self.edge_capacity_in_nodes {
                 self.current_edge_tuple.0 += 1;
                 self.current_edge_tuple.1 = 0;
             }
@@ -719,7 +728,7 @@ impl<'a, It: Iterator<Item = &'a Null>, Null: NicheWrapper> Iterator for EdgeIte
 struct EdgeIterMut<'a, It: Iterator<Item = &'a mut Null>, Null: NicheWrapper + 'a> {
     edges: It,
     current_edge_tuple: (usize, usize),
-    node_capacity: usize,
+    edge_capacity_in_nodes: usize,
 }
 
 impl<'a, It: Iterator<Item = &'a mut Null>, Null: NicheWrapper> Iterator
@@ -731,7 +740,7 @@ impl<'a, It: Iterator<Item = &'a mut Null>, Null: NicheWrapper> Iterator
         for edge in self.edges.by_ref() {
             let current_edge_tuple = self.current_edge_tuple;
             self.current_edge_tuple.1 += 1;
-            if self.current_edge_tuple.1 == self.node_capacity {
+            if self.current_edge_tuple.1 == self.edge_capacity_in_nodes {
                 self.current_edge_tuple.0 += 1;
                 self.current_edge_tuple.1 = 0;
             }
@@ -756,13 +765,18 @@ fn incoming_neighbor_iter<'a, Null: NicheWrapper + 'a>(
     num_nodes: usize,
 ) -> impl Iterator<Item = (MatrixGraphNodeId, &'a <Null as NicheWrapper>::Wrapped)> {
     let start_index = target.0;
-    node_adjacencies
-        .iter()
-        .skip(start_index)
-        .step_by(num_nodes)
-        .take(num_nodes)
-        .enumerate()
-        .filter_map(move |(i, adj)| adj.as_ref().map(|data| (MatrixGraphNodeId(i), data)))
+    if num_nodes == 0 || start_index >= num_nodes {
+        return Either::Left(None.into_iter());
+    }
+    Either::Right(
+        node_adjacencies
+            .iter()
+            .skip(start_index)
+            .step_by(num_nodes)
+            .take(num_nodes)
+            .enumerate()
+            .filter_map(move |(i, adj)| adj.as_ref().map(|data| (MatrixGraphNodeId(i), data))),
+    )
 }
 
 /// Returns an iterator over the neighbors of a node which correspond to incoming edges with the
@@ -935,17 +949,20 @@ fn neighbor_iter_mut<'a, Null: NicheWrapper + 'a>(
 
 impl VisitContainer<DiMatrixEdgeId> for MatrixGraphVisitMap<DiMatrixEdgeId> {
     fn mark_visited(&mut self, id: DiMatrixEdgeId) {
-        let index = to_flat_square_matrix_position(id.source.0, id.target.0, self.node_capacity);
+        let index =
+            to_flat_square_matrix_position(id.source.0, id.target.0, self.edge_capacity_in_nodes);
         self.visit_map.set(index, true);
     }
 
     fn mark_unvisited(&mut self, id: DiMatrixEdgeId) {
-        let index = to_flat_square_matrix_position(id.source.0, id.target.0, self.node_capacity);
+        let index =
+            to_flat_square_matrix_position(id.source.0, id.target.0, self.edge_capacity_in_nodes);
         self.visit_map.set(index, false);
     }
 
     fn is_visited(&self, id: DiMatrixEdgeId) -> bool {
-        let index = to_flat_square_matrix_position(id.source.0, id.target.0, self.node_capacity);
+        let index =
+            to_flat_square_matrix_position(id.source.0, id.target.0, self.edge_capacity_in_nodes);
         self.visit_map.contains(index) && self.visit_map[index]
     }
 
@@ -958,22 +975,26 @@ impl<Data: Clone> DataContainer<DiMatrixEdgeId, Data>
     for MatrixGraphEdgeDataContainer<DiMatrixEdgeId, Data>
 {
     fn get(&self, id: DiMatrixEdgeId) -> &Data {
-        let index = to_flat_square_matrix_position(id.source.0, id.target.0, self.node_capacity);
+        let index =
+            to_flat_square_matrix_position(id.source.0, id.target.0, self.edge_capacity_in_nodes);
         &self.data[index]
     }
 
     fn get_mut(&mut self, id: DiMatrixEdgeId) -> &mut Data {
-        let index = to_flat_square_matrix_position(id.source.0, id.target.0, self.node_capacity);
+        let index =
+            to_flat_square_matrix_position(id.source.0, id.target.0, self.edge_capacity_in_nodes);
         &mut self.data[index]
     }
 
     fn insert(&mut self, id: DiMatrixEdgeId, data: Data) {
-        let index = to_flat_square_matrix_position(id.source.0, id.target.0, self.node_capacity);
+        let index =
+            to_flat_square_matrix_position(id.source.0, id.target.0, self.edge_capacity_in_nodes);
         self.data[index] = data;
     }
 
     fn remove(&mut self, id: DiMatrixEdgeId) {
-        let index = to_flat_square_matrix_position(id.source.0, id.target.0, self.node_capacity);
+        let index =
+            to_flat_square_matrix_position(id.source.0, id.target.0, self.edge_capacity_in_nodes);
         self.data[index] = self.default_value.clone();
     }
 
@@ -1002,7 +1023,7 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>> StorableGraph for MatrixGraph<N, E, 
     fn edge_visit_container(&self) -> Self::EdgeVisitContainer {
         MatrixGraphVisitMap {
             visit_map: FixedBitSet::with_capacity(self.flattened_edge_data.len()),
-            node_capacity: self.node_capacity,
+            edge_capacity_in_nodes: self.edge_capacity_in_nodes,
             phantom: PhantomData,
         }
     }
@@ -1013,7 +1034,7 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>> StorableGraph for MatrixGraph<N, E, 
     ) -> Self::EdgeDataContainer<Data> {
         MatrixGraphEdgeDataContainer {
             data: vec![default_value.clone(); self.flattened_edge_data.len()],
-            node_capacity: self.node_capacity,
+            edge_capacity_in_nodes: self.edge_capacity_in_nodes,
             default_value,
             phantom: PhantomData,
         }
