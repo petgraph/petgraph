@@ -292,10 +292,17 @@ impl<N, E> EditableGraph for UndirectedTestGraph<N, E, UndirNodeId, UndirEdgeId>
 mod tests {
     use super::*;
     use crate::{
-        test_undirected_editable_graph, test_undirected_graph, test_undirected_storable_graph,
+        test_undirected_editable_graph, test_undirected_graph,
+        test_undirected_graph_parallel_edges, test_undirected_graph_self_loops,
+        test_undirected_storable_graph,
     };
 
     test_undirected_graph!(UndirectedTestGraph::<(), (), UndirNodeId, UndirEdgeId>::new,);
+    test_undirected_graph_self_loops!(UndirectedTestGraph::<(), (), UndirNodeId, UndirEdgeId>::new,);
+    test_undirected_graph_parallel_edges!(
+        UndirectedTestGraph::<(), (), UndirNodeId, UndirEdgeId>::new,
+    );
+
     test_undirected_editable_graph!(UndirectedTestGraph::<(), (), UndirNodeId, UndirEdgeId>::new,);
     test_undirected_storable_graph!(UndirectedTestGraph::<(), (), UndirNodeId, UndirEdgeId>::new,);
 }
