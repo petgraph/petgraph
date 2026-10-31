@@ -19,6 +19,7 @@ all-features = true
 [dependencies]
 petgraph-core = { workspace = true }
 petgraph-old  = { workspace = true, optional = true }
+petgraph-matrix-graph = { workspace = true, optional = true }
 
 [dev-dependencies]
 
@@ -26,8 +27,9 @@ petgraph-old  = { workspace = true, optional = true }
 std          = ["alloc", "petgraph-core/std"]
 alloc        = ["petgraph-core/alloc"]
 petgraph-old = ["dep:petgraph-old"]
+petgraph-matrix-graph = ["dep:petgraph-matrix-graph"]
 
-default = ["std"]
+default = ["std", "petgraph-matrix-graph"]
 
 [lints]
 workspace = true

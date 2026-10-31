@@ -1,5 +1,5 @@
 [workspace]
-members  = ["crates/core", "crates/petgraph"]
+members  = ["crates/core", "crates/matrix_graph", "crates/petgraph"]
 resolver = "3"
 
 [workspace.package]
@@ -20,12 +20,16 @@ rust-version = "1.85"
 [workspace.dependencies]
 petgraph-core = { path = "crates/core", default-features = false }
 # TODO: Change this to crates io, once new minor version is released.
-petgraph-old = { git = "https://github.com/petgraph/petgraph", branch = "0.8", package = "petgraph" }
+petgraph-matrix-graph = { path = "crates/matrix_graph", default-features = false }
+petgraph-old          = { git = "https://github.com/petgraph/petgraph", branch = "0.8", package = "petgraph" }
 
 fixedbitset = { version = "0.5.7", default-features = false }
 foldhash    = { version = "0.2.0", default-features = false }
 hashbrown   = { version = "^0.17.0", default-features = false }
+slab      = { version = "0.4.12", default-features = false }
 
+[workspace.dev-dependencies]
+petgraph-core = { path = "crates/core", features = ["utils"] }
 
 [workspace.lints.rust]
 future_incompatible = { level = "warn", priority = -1 }
