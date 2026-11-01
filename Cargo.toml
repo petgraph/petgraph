@@ -28,9 +28,6 @@ foldhash    = { version = "0.2.0", default-features = false }
 hashbrown   = { version = "^0.17.0", default-features = false }
 slab      = { version = "0.4.12", default-features = false }
 
-[workspace.dev-dependencies]
-petgraph-core = { path = "crates/core", features = ["utils"] }
-
 [workspace.lints.rust]
 future_incompatible = { level = "warn", priority = -1 }
 nonstandard_style   = { level = "warn", priority = -1 }

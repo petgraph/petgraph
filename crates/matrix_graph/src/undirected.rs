@@ -87,8 +87,10 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>> MatrixGraphExtras<N> for UnMatrixGra
             return;
         }
 
-        self.edge_capacity_in_nodes =
-            extend_lower_triangular_matrix(&mut self.flattened_edge_data, new_edge_capacity_in_nodes);
+        self.edge_capacity_in_nodes = extend_lower_triangular_matrix(
+            &mut self.flattened_edge_data,
+            new_edge_capacity_in_nodes,
+        );
     }
 
     #[inline]
@@ -313,7 +315,11 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>> UndirectedGraph for UnMatrixGraph<N,
     // Degree
     #[inline]
     fn degree(&self, node: Self::NodeId) -> usize {
-        NeighborIterator::new(&self.flattened_edge_data, node, self.edge_capacity_in_nodes).count()
+        let neighbor_count =
+            NeighborIterator::new(&self.flattened_edge_data, node, self.edge_capacity_in_nodes)
+                .count();
+        let self_loop_indicator = usize::from(self.contains_edge(UnMatrixEdgeId::new(node, node)));
+        neighbor_count + self_loop_indicator
     }
 
     // Incidence
@@ -500,7 +506,11 @@ struct NeighborIterator<'a, Null: NicheWrapper + 'a> {
 }
 
 impl<'a, Null: NicheWrapper + 'a> NeighborIterator<'a, Null> {
-    const fn new(edges: &'a [Null], start_node: MatrixGraphNodeId, edge_capacity_in_nodes: usize) -> Self {
+    const fn new(
+        edges: &'a [Null],
+        start_node: MatrixGraphNodeId,
+        edge_capacity_in_nodes: usize,
+    ) -> Self {
         if start_node.0 >= edge_capacity_in_nodes {
             // This iterator will be empty, since a node with an index greater than or equal to
             // the node capacity cannot have any neighbors.
@@ -522,6 +532,8 @@ impl<'a, Null: NicheWrapper + 'a> NeighborIterator<'a, Null> {
 }
 
 impl<'a, Null: NicheWrapper> Iterator for NeighborIterator<'a, Null> {
+    // TODO: Possibly performance optimize this by distinguishing the case where the neighbor <=
+    // start_node or not
     type Item = (MatrixGraphNodeId, &'a Null::Wrapped);
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -699,7 +711,9 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>> StorableGraph for MatrixGraph<N, E, 
 #[cfg(test)]
 mod tests {
     use petgraph_core::{
-        test_undirected_editable_graph, test_undirected_graph, test_undirected_storable_graph,
+        test_undirected_editable_graph, test_undirected_editable_graph_self_loops,
+        test_undirected_graph, test_undirected_graph_self_loops, test_undirected_storable_graph,
+        test_undirected_storable_graph_self_loops,
     };
 
     use super::{super::*, *};
@@ -832,8 +846,17 @@ mod tests {
     }
 
     test_undirected_graph!(MatrixGraph::<(), (), Undirected, Option<()>>::new_undirected,);
+    test_undirected_graph_self_loops!(
+        MatrixGraph::<(), (), Undirected, Option<()>>::new_undirected,
+    );
 
     test_undirected_editable_graph!(MatrixGraph::<(), (), Undirected, Option<()>>::new_undirected,);
+    test_undirected_editable_graph_self_loops!(
+        MatrixGraph::<(), (), Undirected, Option<()>>::new_undirected,
+    );
 
     test_undirected_storable_graph!(MatrixGraph::<(), (), Undirected, Option<()>>::new_undirected,);
+    test_undirected_storable_graph_self_loops!(
+        MatrixGraph::<(), (), Undirected, Option<()>>::new_undirected,
+    );
 }

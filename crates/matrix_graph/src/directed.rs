@@ -512,21 +512,20 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>> DirectedGraph for DiMatrixGraph<N, E
         target: Self::NodeId,
     ) -> impl Iterator<Item = EdgeMut<'_, Self>> {
         let edge_index = self.to_edge_position(source, target);
-        if let Some(edge_index) = edge_index {
-            self.flattened_edge_data
-                .get_mut(edge_index)
-                .unwrap()
-                .as_mut()
-                .map(|data| EdgeMut::<Self> {
-                    id: DiMatrixEdgeId::new(source, target),
-                    source,
-                    target,
-                    data,
-                })
-                .into_iter()
-        } else {
-            None.into_iter()
-        }
+        edge_index
+            .and_then(|edge_index| {
+                self.flattened_edge_data
+                    .get_mut(edge_index)
+                    .unwrap()
+                    .as_mut()
+                    .map(|data| EdgeMut::<Self> {
+                        id: DiMatrixEdgeId::new(source, target),
+                        source,
+                        target,
+                        data,
+                    })
+            })
+            .into_iter()
     }
 
     #[inline]
@@ -536,9 +535,8 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>> DirectedGraph for DiMatrixGraph<N, E
         rhs: Self::NodeId,
     ) -> impl Iterator<Item = EdgeRef<'_, Self>> {
         let edge_index_one = self.to_edge_position(lhs, rhs);
-        let edge_index_two = self.to_edge_position(rhs, lhs);
-        match (edge_index_one, edge_index_two) {
-            (Some(edge_index_one), Some(edge_index_two)) => Either::Left(
+        let iter = edge_index_one
+            .and_then(|edge_index_one| {
                 self.flattened_edge_data
                     .get(edge_index_one)
                     .unwrap()
@@ -549,48 +547,25 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>> DirectedGraph for DiMatrixGraph<N, E
                         target: rhs,
                         data,
                     })
-                    .into_iter()
-                    .chain(
-                        self.flattened_edge_data
-                            .get(edge_index_two)
-                            .unwrap()
-                            .as_ref()
-                            .map(|data| EdgeRef::<Self> {
-                                id: DiMatrixEdgeId::new(rhs, lhs),
-                                source: rhs,
-                                target: lhs,
-                                data,
-                            }),
-                    ),
-            ),
-            (Some(edge_index_one), None) => Either::Right(Either::Left(
-                self.flattened_edge_data
-                    .get(edge_index_one)
-                    .unwrap()
-                    .as_ref()
-                    .map(|data| EdgeRef::<Self> {
-                        id: DiMatrixEdgeId::new(lhs, rhs),
-                        source: lhs,
-                        target: rhs,
-                        data,
-                    })
-                    .into_iter(),
-            )),
-            (None, Some(edge_index_two)) => Either::Right(Either::Right(
-                self.flattened_edge_data
-                    .get(edge_index_two)
-                    .unwrap()
-                    .as_ref()
-                    .map(|data| EdgeRef::<Self> {
-                        id: DiMatrixEdgeId::new(rhs, lhs),
-                        source: rhs,
-                        target: lhs,
-                        data,
-                    })
-                    .into_iter(),
-            )),
-            (None, None) => Either::Right(Either::Left(None.into_iter())),
+            })
+            .into_iter();
+        if rhs == lhs {
+            return Either::Left(iter);
         }
+        let edge_index_two = self.to_edge_position(rhs, lhs);
+        let iter = iter.chain(edge_index_two.and_then(|edge_index_two| {
+            self.flattened_edge_data
+                .get(edge_index_two)
+                .unwrap()
+                .as_ref()
+                .map(|data| EdgeRef::<Self> {
+                    id: DiMatrixEdgeId::new(rhs, lhs),
+                    source: rhs,
+                    target: lhs,
+                    data,
+                })
+        }));
+        Either::Right(iter)
     }
 
     #[inline]
@@ -1059,7 +1034,9 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>> StorableGraph for MatrixGraph<N, E, 
 #[cfg(test)]
 mod tests {
     use petgraph_core::{
-        test_directed_editable_graph, test_directed_graph, test_directed_storable_graph,
+        test_directed_editable_graph, test_directed_editable_graph_self_loops, test_directed_graph,
+        test_directed_graph_self_loops, test_directed_storable_graph,
+        test_directed_storable_graph_self_loops,
     };
 
     use super::{super::*, *};
@@ -1214,8 +1191,15 @@ mod tests {
     }
 
     test_directed_graph!(MatrixGraph::<(), (), Directed, Option<()>>::new_directed,);
+    test_directed_graph_self_loops!(MatrixGraph::<(), (), Directed, Option<()>>::new_directed,);
 
     test_directed_editable_graph!(MatrixGraph::<(), (), Directed, Option<()>>::new_directed,);
+    test_directed_editable_graph_self_loops!(
+        MatrixGraph::<(), (), Directed, Option<()>>::new_directed,
+    );
 
     test_directed_storable_graph!(MatrixGraph::<(), (), Directed, Option<()>>::new_directed,);
+    test_directed_storable_graph_self_loops!(
+        MatrixGraph::<(), (), Directed, Option<()>>::new_directed,
+    );
 }
