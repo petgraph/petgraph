@@ -1,3 +1,4 @@
+use alloc::{vec, vec::Vec};
 use core::{cmp, marker::PhantomData};
 
 use fixedbitset::FixedBitSet;
