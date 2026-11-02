@@ -94,9 +94,9 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>> MatrixGraphExtras<N> for DiMatrixGra
             return None;
         }
 
-        // If the node capacity is larger or equal to the node id, then there cannot exist any edges
-        // incident to the node. But the node might still be in the node_data (i.e. the
-        // graph) as an isolated node
+        // If the node id is larger than or equal to the edge capacity in nodes, then there cannot
+        // exist any edges incident to the node. But the node might still be in the
+        // node_data (i.e. the graph) as an isolated node
         if node.0 < self.edge_capacity_in_nodes {
             for (id, _) in &self.node_data {
                 let position = self.to_edge_position(node, MatrixGraphNodeId(id));
@@ -954,7 +954,7 @@ impl VisitContainer<DiMatrixEdgeId> for MatrixGraphVisitMap<DiMatrixEdgeId> {
     fn is_visited(&self, id: DiMatrixEdgeId) -> bool {
         let index =
             to_flat_square_matrix_position(id.source.0, id.target.0, self.edge_capacity_in_nodes);
-        self.visit_map.contains(index) && self.visit_map[index]
+        self.visit_map.contains(index)
     }
 
     fn clear(&mut self) {
