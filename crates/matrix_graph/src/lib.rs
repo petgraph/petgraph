@@ -20,9 +20,8 @@ use petgraph_core::{
     graph::{Directed, EditableGraph, Graph, Undirected},
     id::{Id, IndexId},
 };
+pub(crate) use private::MatrixGraphExtras;
 use slab::Slab;
-
-use crate::private::Sealed;
 
 mod directed;
 mod undirected;
@@ -90,10 +89,60 @@ impl IndexId for MatrixGraphNodeId {
 }
 
 mod private {
+    use petgraph_core::graph::Graph;
+
+    use crate::MatrixGraphNodeId;
+
     pub trait Sealed {}
 
     impl<T> Sealed for super::NotZero<T> {}
     impl<T> Sealed for Option<T> {}
+
+    /// Internal trait for extra methods for directed and undirected [`MatrixGraph`]s, to simplify
+    /// their implementations.
+    pub trait MatrixGraphExtras<N>: Sealed + Graph {
+        /// Return the position of the edge from `node_a` to `node_b` in the flattened adjacency
+        /// matrix.
+        ///
+        /// Returns `None` if either of the nodes doesn't exist.
+        fn to_edge_position(
+            &self,
+            node_a: MatrixGraphNodeId,
+            node_b: MatrixGraphNodeId,
+        ) -> Option<usize>;
+
+        /// Return the position of the edge from `node_a` to `node_b` in the flattened adjacency
+        /// matrix.
+        ///
+        /// # Panics
+        /// May panic if either of the nodes doesn't exist.
+        fn to_edge_position_unchecked(
+            &self,
+            node_a: MatrixGraphNodeId,
+            node_b: MatrixGraphNodeId,
+        ) -> usize;
+
+        /// Extends the capacity of the underlying flattened edge data vec for the node.
+        fn extend_capacity_for_node(&mut self, new_edge_capacity_in_nodes: usize, exact: bool);
+
+        /// Remove `node` from the graph.
+        ///
+        /// Returns `None` if the node doesn't exist, otherwise returns the associated data of the
+        /// removed node.
+        fn remove_node_internal(&mut self, node: MatrixGraphNodeId) -> Option<N>;
+
+        /// Return the source node of the edge with the given `EdgeId`.
+        fn edge_id_to_source(edge_id: Self::EdgeId) -> MatrixGraphNodeId;
+
+        /// Return the target node of the edge with the given `EdgeId`.
+        fn edge_id_to_target(edge_id: Self::EdgeId) -> MatrixGraphNodeId;
+
+        /// Return the `EdgeId` of the edge from `source` to `target`.
+        fn edge_id_from_source_target(
+            source: MatrixGraphNodeId,
+            target: MatrixGraphNodeId,
+        ) -> Self::EdgeId;
+    }
 }
 
 /// Wrapper trait for an `Option`.
@@ -196,50 +245,6 @@ impl<T: Default + PartialEq> From<NotZero<T>> for Option<T> {
             Some(not_zero.0)
         }
     }
-}
-
-/// Internal trait for extra methods for directed and undirected [`MatrixGraph`]s, to simplify their
-/// implementations.
-pub trait MatrixGraphExtras<N>: Sealed + Graph {
-    /// Return the position of the edge from `node_a` to `node_b` in the flattened adjacency matrix.
-    ///
-    /// Returns `None` if either of the nodes doesn't exist.
-    fn to_edge_position(
-        &self,
-        node_a: MatrixGraphNodeId,
-        node_b: MatrixGraphNodeId,
-    ) -> Option<usize>;
-
-    /// Return the position of the edge from `node_a` to `node_b` in the flattened adjacency matrix.
-    ///
-    /// # Panics
-    /// May panic if either of the nodes doesn't exist.
-    fn to_edge_position_unchecked(
-        &self,
-        node_a: MatrixGraphNodeId,
-        node_b: MatrixGraphNodeId,
-    ) -> usize;
-
-    /// Extends the capacity of the underlying flattened edge data vec for the node.
-    fn extend_capacity_for_node(&mut self, new_edge_capacity_in_nodes: usize, exact: bool);
-
-    /// Remove `node` from the graph.
-    ///
-    /// Returns `None` if the node doesn't exist, otherwise returns the associated data of the
-    /// removed node.
-    fn remove_node_internal(&mut self, node: MatrixGraphNodeId) -> Option<N>;
-
-    /// Return the source node of the edge with the given `EdgeId`.
-    fn edge_id_to_source(edge_id: Self::EdgeId) -> MatrixGraphNodeId;
-
-    /// Return the target node of the edge with the given `EdgeId`.
-    fn edge_id_to_target(edge_id: Self::EdgeId) -> MatrixGraphNodeId;
-
-    /// Return the `EdgeId` of the edge from `source` to `target`.
-    fn edge_id_from_source_target(
-        source: MatrixGraphNodeId,
-        target: MatrixGraphNodeId,
-    ) -> Self::EdgeId;
 }
 
 /// `MatrixGraph<N, E, Dir, Null>` is a graph using an adjacency matrix representation.

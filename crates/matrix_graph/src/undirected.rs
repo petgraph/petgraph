@@ -23,27 +23,36 @@ pub type UnMatrixGraph<N, E, Null = Option<E>> = MatrixGraph<N, E, Undirected, N
 /// Edge identifier type for an undirected [`MatrixGraph`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct UnMatrixEdgeId {
-    pub source: MatrixGraphNodeId,
-    pub target: MatrixGraphNodeId,
-    _private: PhantomData<()>,
+    source: MatrixGraphNodeId,
+    target: MatrixGraphNodeId,
 }
 
 impl UnMatrixEdgeId {
+    /// Create a new [`UnMatrixEdgeId`] from the given source and target node identifiers.
     #[must_use]
     pub const fn new(source: MatrixGraphNodeId, target: MatrixGraphNodeId) -> Self {
         if source.0 < target.0 {
-            Self {
-                source,
-                target,
-                _private: PhantomData::<()>,
-            }
+            Self { source, target }
         } else {
             Self {
                 source: target,
                 target: source,
-                _private: PhantomData::<()>,
             }
         }
+    }
+
+    /// Get the source node identifier of this edge. This may be either of the two node identifiers,
+    /// since the edge is undirected.
+    #[must_use]
+    pub const fn source(&self) -> MatrixGraphNodeId {
+        self.source
+    }
+
+    /// Get the target node identifier of this edge. This may be either of the two node identifiers,
+    /// since the edge is undirected.
+    #[must_use]
+    pub const fn target(&self) -> MatrixGraphNodeId {
+        self.target
     }
 }
 
@@ -100,9 +109,9 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>> MatrixGraphExtras<N> for UnMatrixGra
             return None;
         }
 
-        // If the node capacity is larger or equal to the node id, then there cannot exist any edges
-        // incident to the node. But the node might still be in the node_data (i.e. the
-        // graph) as an isolated node
+        // If the node id is larger than or equal to the edge capacity in nodes, then there cannot
+        // exist any edges incident to the node. But the node might still be in the
+        // node_data (i.e. the graph) as an isolated node
         if node.0 < self.edge_capacity_in_nodes {
             for (id, _) in &self.node_data {
                 let position = self.to_edge_position(node, MatrixGraphNodeId(id));
@@ -513,8 +522,8 @@ impl<'a, Null: NicheWrapper + 'a> NeighborIterator<'a, Null> {
         edge_capacity_in_nodes: usize,
     ) -> Self {
         if start_node.0 >= edge_capacity_in_nodes {
-            // This iterator will be empty, since a node with an index greater than or equal to
-            // the node capacity cannot have any neighbors.
+            // This iterator will be empty, since a node cannot have any neighbors if has an index
+            // greater than or equal to the edge capacity in nodes.
             Self {
                 edges,
                 start_node,
@@ -577,8 +586,8 @@ impl<'a, Null> NeighborIterMut<'a, Null> {
         edge_capacity_in_nodes: usize,
     ) -> Self {
         if source_node.0 >= edge_capacity_in_nodes {
-            // This iterator will be empty, since a node with an index greater than or equal to
-            // the node capacity cannot have any neighbors.
+            // This iterator will be empty, since a node cannot have any neighbors if has an index
+            // greater than or equal to the edge capacity in nodes.
             Self {
                 remaining_edge_data: flattened_edge_data,
                 consumed: 0,
@@ -635,7 +644,7 @@ impl VisitContainer<UnMatrixEdgeId> for MatrixGraphVisitMap<UnMatrixEdgeId> {
 
     fn is_visited(&self, id: UnMatrixEdgeId) -> bool {
         let index = to_lower_triangular_matrix_position(id.source.0, id.target.0);
-        self.visit_map.contains(index) && self.visit_map[index]
+        self.visit_map.contains(index)
     }
 
     fn clear(&mut self) {
