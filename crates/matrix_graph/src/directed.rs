@@ -188,10 +188,7 @@ fn extend_flat_square_matrix<T: Default>(
             head[pos..pos + old_edge_capacity_in_nodes]
                 .swap_with_slice(&mut tail[..old_edge_capacity_in_nodes]);
         } else {
-            // The old row overlaps its new position. Everything in
-            // `pos + old_edge_capacity_in_nodes..new_pos + old_edge_capacity_in_nodes` is still a
-            // default value, so rotating the range moves the row to `new_pos` and the defaults to
-            // the front.
+            // The old row overlaps its new position, so rotate the slice to move it into place.
             node_adjacencies[pos..new_pos + old_edge_capacity_in_nodes].rotate_right(new_pos - pos);
         }
     }
