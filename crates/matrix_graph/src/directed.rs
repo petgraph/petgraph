@@ -159,6 +159,8 @@ fn extend_flat_square_matrix<T: Default>(
     let new_edge_capacity_in_nodes = if exact {
         new_edge_capacity_in_nodes
     } else {
+        // Optimization: when resizing the matrix this way we skip the first few grows to make
+        // small matrices a bit faster to work with.
         const MIN_CAPACITY: usize = 4;
         cmp::max(
             new_edge_capacity_in_nodes
@@ -167,9 +169,6 @@ fn extend_flat_square_matrix<T: Default>(
             MIN_CAPACITY,
         )
     };
-
-    // Optimization: when resizing the matrix this way we skip the first few grows to make
-    // small matrices a bit faster to work with.
 
     node_adjacencies.resize_with(
         new_edge_capacity_in_nodes
@@ -182,21 +181,18 @@ fn extend_flat_square_matrix<T: Default>(
         let new_pos = current
             .checked_mul(new_edge_capacity_in_nodes)
             .unwrap_or_else(|| panic!("Matrix capacity overflow"));
-        // Move the slices directly if they do not overlap with their new position
         if pos + old_edge_capacity_in_nodes <= new_pos {
-            debug_assert!(pos + old_edge_capacity_in_nodes < node_adjacencies.len());
-            debug_assert!(new_pos + old_edge_capacity_in_nodes < node_adjacencies.len());
-            let ptr = node_adjacencies.as_mut_ptr();
-            // SAFETY: pos + old_edge_capacity_in_nodes <= new_pos, so this won't overlap
-            unsafe {
-                let old = ptr.add(pos);
-                let new = ptr.add(new_pos);
-                core::ptr::swap_nonoverlapping(old, new, old_edge_capacity_in_nodes);
-            }
+            // The old row and its new position do not overlap, so swap them as two disjoint
+            // slices.
+            let (head, tail) = node_adjacencies.split_at_mut(new_pos);
+            head[pos..pos + old_edge_capacity_in_nodes]
+                .swap_with_slice(&mut tail[..old_edge_capacity_in_nodes]);
         } else {
-            for i in (0..old_edge_capacity_in_nodes).rev() {
-                node_adjacencies.swap(pos + i, new_pos + i);
-            }
+            // The old row overlaps its new position. Everything in
+            // `pos + old_edge_capacity_in_nodes..new_pos + old_edge_capacity_in_nodes` is still a
+            // default value, so rotating the range moves the row to `new_pos` and the defaults to
+            // the front.
+            node_adjacencies[pos..new_pos + old_edge_capacity_in_nodes].rotate_right(new_pos - pos);
         }
     }
 
