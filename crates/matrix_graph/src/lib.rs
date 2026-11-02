@@ -2,6 +2,8 @@
 //! directed and undirected graphs and supports arbitrary associated data for nodes and edges.
 //!
 //! This module contains the implementation of [`MatrixGraph`].
+#![no_std]
+
 extern crate alloc;
 
 use alloc::{fmt, vec, vec::Vec};
