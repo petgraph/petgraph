@@ -296,6 +296,10 @@ where
     F: FnMut(G::EdgeRef) -> K,
     K: Measure + Copy,
 {
+    if start == goal {
+        return Some(K::default());
+    }
+
     let mut forward_visited = graph.visit_map();
     let mut forward_distance = HashMap::new();
     forward_distance.insert(start, K::default());
