@@ -12,6 +12,7 @@ repository = "https://github.com/petgraph/petgraph"
 
 keywords = ["data-structure", "graph", "unionfind", "graph-algorithms"]
 categories = ["data-structures"]
+include = ["src/**/*", "README.md", "LICENSE-MIT", "LICENSE-APACHE", "assets/examples/graph-example.dot"]
 
 rust-version = { workspace = true }
 edition = { workspace = true }

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/images/graphosaurus-512.png" alt="Petgraph Logo"/>
+  <img src="https://raw.githubusercontent.com/petgraph/petgraph/0.8/assets/images/graphosaurus-512.png" alt="Petgraph Logo"/>
 </p>
 
 petgraph
@@ -141,11 +141,11 @@ terms.
 
 [build-status]: https://github.com/petgraph/petgraph/actions/workflows/ci.yml/badge.svg
 
-[changelog]: CHANGELOG.md
+[changelog]: https://raw.githubusercontent.com/petgraph/petgraph/0.8/CHANGELOG.md
 
 [ci-url]: https://github.com/petgraph/petgraph/actions/workflows/ci.yml
 
-[contributing]: CONTRIBUTING.md
+[contributing]: https://raw.githubusercontent.com/petgraph/petgraph/0.8/CONTRIBUTING.md
 
 [crates-badge]: https://img.shields.io/crates/v/petgraph.svg
 
