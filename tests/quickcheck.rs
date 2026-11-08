@@ -907,10 +907,6 @@ where
         let dijkstra_res = dijkstra(&g, node1, None, |e| *e.weight());
 
         for node2 in g.node_identifiers() {
-            if node1 == node2 {
-                continue;
-            }
-
             let bidirectional_dijkstra_res =
                 bidirectional_dijkstra(&g, node1, node2, |e| *e.weight());
 

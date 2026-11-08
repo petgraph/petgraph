@@ -16,7 +16,7 @@ use petgraph::algo::{
 use petgraph::graph::node_index as n;
 use petgraph::graph::{GraphError, IndexType};
 
-use petgraph::algo::{astar, dijkstra, DfsSpace};
+use petgraph::algo::{astar, bidirectional_dijkstra, dijkstra, DfsSpace};
 use petgraph::visit::{
     IntoEdges, IntoEdgesDirected, IntoNodeIdentifiers, NodeFiltered, NodeIndexable, Reversed, Topo,
     VisitMap, Walker,
@@ -462,6 +462,25 @@ fn dijk() {
 
     let scores = dijkstra(&g, a, Some(c), |e| *e.weight());
     assert_eq!(scores[&c], 9);
+}
+
+#[test]
+fn bidirectional_dijkstra_start_is_goal() {
+    let mut g = Graph::new();
+    let a = g.add_node("A");
+    let b = g.add_node("B");
+    let c = g.add_node("C");
+
+    // A node with no edges.
+    assert_eq!(bidirectional_dijkstra(&g, c, c, |e| *e.weight()), Some(0));
+
+    // A node with outgoing edges only.
+    g.add_edge(a, b, 1);
+    assert_eq!(bidirectional_dijkstra(&g, a, a, |e| *e.weight()), Some(0));
+
+    // A node on a cycle.
+    g.add_edge(b, a, 1);
+    assert_eq!(bidirectional_dijkstra(&g, a, a, |e| *e.weight()), Some(0));
 }
 
 #[test]
