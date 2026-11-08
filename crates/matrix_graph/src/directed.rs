@@ -146,7 +146,6 @@ const fn to_flat_square_matrix_position(row: usize, column: usize, width: usize)
     row * width + column
 }
 
-// TODO: Double check this function
 #[inline]
 fn extend_flat_square_matrix<T: Default>(
     node_adjacencies: &mut Vec<T>,
@@ -779,10 +778,10 @@ fn outgoing_neighbor_iter<'a, Null: NicheWrapper + 'a>(
     source: MatrixGraphNodeId,
     edge_capacity_in_nodes: usize,
 ) -> impl Iterator<Item = (MatrixGraphNodeId, &'a <Null as NicheWrapper>::Wrapped)> {
-    let start_index = source.0 * edge_capacity_in_nodes;
     if edge_capacity_in_nodes == 0 || source.0 >= edge_capacity_in_nodes {
         return Either::Left(None.into_iter());
     }
+    let start_index = source.0 * edge_capacity_in_nodes;
     Either::Right(
         node_adjacencies
             .iter()
@@ -801,10 +800,11 @@ fn outgoing_neighbor_iter_mut<'b, Null: NicheWrapper + 'b>(
     source: MatrixGraphNodeId,
     edge_capacity_in_nodes: usize,
 ) -> impl Iterator<Item = (MatrixGraphNodeId, &'b mut <Null as NicheWrapper>::Wrapped)> {
-    let start_index = source.0 * edge_capacity_in_nodes;
     if edge_capacity_in_nodes == 0 || source.0 >= edge_capacity_in_nodes {
         return Either::Left(None.into_iter());
     }
+    let start_index = source.0 * edge_capacity_in_nodes;
+
     Either::Right(
         node_adjacencies
             .iter_mut()

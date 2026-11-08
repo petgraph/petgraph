@@ -257,7 +257,7 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>> UndirectedGraph for UnMatrixGraph<N,
             edges: self.flattened_edge_data.iter(),
             next_edge_tuple: (0, 0),
         }
-        .map(|(source, target, data)| EdgeRef::<Self> {
+        .map(|(target, source, data)| EdgeRef::<Self> {
             id: UnMatrixEdgeId::new(source, target),
             source,
             target,
@@ -271,7 +271,7 @@ impl<N, E, Null: NicheWrapper<Wrapped = E>> UndirectedGraph for UnMatrixGraph<N,
             edges: self.flattened_edge_data.iter_mut(),
             next_edge_tuple: (0, 0),
         }
-        .map(|(source, target, data)| EdgeMut::<Self> {
+        .map(|(target, source, data)| EdgeMut::<Self> {
             id: UnMatrixEdgeId::new(source, target),
             source,
             target,

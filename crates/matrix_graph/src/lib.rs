@@ -198,6 +198,7 @@ impl<T> NicheWrapper for Option<T> {
 ///
 /// Note that if you're already using the standard non-zero types (such as `NonZeroU32`), you don't
 /// have to use this wrapper and can leave the default `Null` type argument.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct NotZero<T>(T);
 
 impl<T: Default + PartialEq> Default for NotZero<T> {
@@ -420,8 +421,8 @@ where
         let position = self.to_edge_position_unchecked(source, target);
         let old_data = &mut self.flattened_edge_data[position];
         if old_data.is_null() {
-            self.edge_count += 1;
             *old_data = Null::new(data);
+            self.edge_count += 1;
         } else {
             return Err(AddEdgeError::EdgeAlreadyExists(source, target));
         }
@@ -544,6 +545,80 @@ where
         match self {
             Self::Left(left) => left.next(),
             Self::Right(right) => right.next(),
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        match self {
+            Self::Left(left) => left.size_hint(),
+            Self::Right(right) => right.size_hint(),
+        }
+    }
+
+    fn fold<Acc, F>(self, init: Acc, f: F) -> Acc
+    where
+        F: FnMut(Acc, Self::Item) -> Acc,
+    {
+        match self {
+            Self::Left(left) => left.fold(init, f),
+            Self::Right(right) => right.fold(init, f),
+        }
+    }
+
+    fn nth(&mut self, n: usize) -> Option<Self::Item> {
+        match self {
+            Self::Left(left) => left.nth(n),
+            Self::Right(right) => right.nth(n),
+        }
+    }
+
+    fn all<F>(&mut self, f: F) -> bool
+    where
+        F: FnMut(Self::Item) -> bool,
+    {
+        match self {
+            Self::Left(left) => left.all(f),
+            Self::Right(right) => right.all(f),
+        }
+    }
+
+    fn any<F>(&mut self, f: F) -> bool
+    where
+        F: FnMut(Self::Item) -> bool,
+    {
+        match self {
+            Self::Left(left) => left.any(f),
+            Self::Right(right) => right.any(f),
+        }
+    }
+
+    fn find<P>(&mut self, predicate: P) -> Option<Self::Item>
+    where
+        P: FnMut(&Self::Item) -> bool,
+    {
+        match self {
+            Self::Left(left) => left.find(predicate),
+            Self::Right(right) => right.find(predicate),
+        }
+    }
+
+    fn find_map<B, F>(&mut self, f: F) -> Option<B>
+    where
+        F: FnMut(Self::Item) -> Option<B>,
+    {
+        match self {
+            Self::Left(left) => left.find_map(f),
+            Self::Right(right) => right.find_map(f),
+        }
+    }
+
+    fn position<P>(&mut self, predicate: P) -> Option<usize>
+    where
+        P: FnMut(Self::Item) -> bool,
+    {
+        match self {
+            Self::Left(left) => left.position(predicate),
+            Self::Right(right) => right.position(predicate),
         }
     }
 }
