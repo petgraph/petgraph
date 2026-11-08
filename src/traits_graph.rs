@@ -66,7 +66,7 @@ where
     }
 
     fn is_adjacent(&self, matrix: &FixedBitSet, a: NodeIndex<Ix>, b: NodeIndex<Ix>) -> bool {
-        let n = self.node_count();
+        let n = self.node_bound();
         let index = n * a.index() + b.index();
         matrix.contains(index)
     }

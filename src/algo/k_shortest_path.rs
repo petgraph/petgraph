@@ -94,7 +94,7 @@ where
     F: FnMut(G::EdgeRef) -> K,
     K: Measure + Copy,
 {
-    let mut counter: Vec<usize> = vec![0; graph.node_count()];
+    let mut counter: Vec<usize> = vec![0; graph.node_bound()];
     let mut scores = HashMap::new();
     let mut visit_next = BinaryHeap::new();
     let zero_score = K::default();
