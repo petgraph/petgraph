@@ -305,7 +305,7 @@ fn build_level_graph<G, C, SContainer, QContainer>(
 where
     G: DirectedGraph + StorableGraph,
     C: Sub<Output = C> + Measure + NonNegative + Zero,
-    SContainer: StackContainer<FlowEdge<G, C>>,
+    SContainer: StackContainer<FlowEdge<G, C>> + Clone,
     QContainer: QueueContainer<G::NodeId>,
 {
     let mut level_graph = network.node_data_container::<usize>(0);
