@@ -8,7 +8,7 @@ In particular, the algorithms in the [crates/algorithms/src/flows/max_flow](../.
 - [ ] Move algorithm to petgraph-algorithms crate into correct directory and module
 
 - [ ] Use new traits for algorithm
-  - [ ] Write your algorithm without using `alloc` or `std` features. Allocations should be done through
+  - [ ] Write your algorithm without using `alloc` or `std` features if possible. Allocations should be done through
     the `StorableGraph` trait implicitly.
   - [ ] Use `IndexId` only if strictly necessary.
   - [ ] Refer to the trait translation table (TODO) to see which new traits replace the old ones.
