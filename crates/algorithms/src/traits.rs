@@ -1,0 +1,106 @@
+use core::{fmt::Debug, ops::Add};
+
+/// Associated data that can be used for measures (such as length).
+pub trait Measure: Debug + PartialOrd + Add<Self, Output = Self> + Copy {}
+
+impl<M> Measure for M where M: Debug + PartialOrd + Add<M, Output = M> + Copy {}
+
+/// A type that has a zero value.
+pub trait Zero {
+    fn zero() -> Self;
+}
+
+macro_rules! impl_zero(
+    ( $( $t:ty ),* )=> {
+        $(
+            impl Zero for $t {
+                fn zero() -> Self {
+                    <$t as Default>::default()
+                }
+            }
+        )*
+    }
+);
+
+impl_zero!(
+    u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64
+);
+
+/// Marker for capacity types whose values are never negative.
+///
+/// Implemented for the unsigned integer types. `f32` and `f64` can hold negative values and
+/// `NaN`, so they don't implement it. To use floating-point capacities, wrap them in a newtype
+/// that implements this trait and make sure every capacity is finite and `>= 0.0`.
+pub trait NonNegative {}
+
+macro_rules! impl_non_negative(
+    ( $( $t:ty ),* )=> {
+        $(
+            impl NonNegative for $t {
+            }
+        )*
+    }
+);
+
+impl_non_negative!(u8, u16, u32, u64, u128, usize);
+
+/// A type that has minimum and maximum values.
+pub trait Bounded {
+    fn min() -> Self;
+    fn max() -> Self;
+}
+
+macro_rules! impl_bounded(
+    ( $( $t:ty ),* )=> {
+        $(
+            impl Bounded for $t {
+                fn min() -> Self {
+                    <$t>::MIN
+                }
+
+                fn max() -> Self {
+                    <$t>::MAX
+                }
+            }
+        )*
+    }
+);
+
+impl_bounded!(
+    u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64
+);
+
+pub trait MinMax {
+    #[must_use]
+    fn min_cmp(&self, other: &Self) -> Self;
+    #[must_use]
+    fn max_cmp(&self, other: &Self) -> Self;
+}
+
+macro_rules! impl_min_max(
+    ( $( $t:ty ),* )=> {
+        $(
+            impl MinMax for $t {
+                fn min_cmp(&self, other: &Self) -> Self {
+                    if self < other {
+                        *self
+                    } else {
+                        *other
+                    }
+                }
+
+                fn max_cmp(&self, other: &Self) -> Self {
+                    if self > other {
+                        *self
+                    } else {
+                        *other
+                    }
+                }
+            }
+        )*
+    }
+);
+
+impl_min_max!(
+    u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64
+);
