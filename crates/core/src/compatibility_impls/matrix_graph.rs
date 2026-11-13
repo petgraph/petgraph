@@ -334,15 +334,15 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
             .chain(self.edges_directed(node, Direction::Outgoing).filter_map(
                 move |(source, target, data)| {
                     // Count self loops only once
-                    if target != node {
+                    if target == node {
+                        None
+                    } else {
                         Some(EdgeRef::<'_, Self> {
                             id: DirMatrixGraphEdgeId::new(source, target),
                             source,
                             target,
                             data,
                         })
-                    } else {
-                        None
                     }
                 },
             ))
@@ -525,11 +525,11 @@ impl<Ix: IndexType> UnMatrixGraphEdgeId<Ix> {
         }
     }
 
-    pub fn source(&self) -> &NodeIndex<Ix> {
+    pub const fn source(&self) -> &NodeIndex<Ix> {
         &self.source
     }
 
-    pub fn target(&self) -> &NodeIndex<Ix> {
+    pub const fn target(&self) -> &NodeIndex<Ix> {
         &self.target
     }
 }
