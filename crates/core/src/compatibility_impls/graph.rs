@@ -4,17 +4,19 @@ use core::{
     fmt::{self, Debug, Display},
 };
 
+use fixedbitset::FixedBitSet;
 use petgraph_old::{
     Directed, Direction, Undirected,
     csr::IndexType,
     graph::{EdgeIndex, Graph as OldGraph, NodeIndex},
-    visit::{EdgeRef as _, IntoNodeReferences},
+    visit::{EdgeRef as _, IntoNodeReferences, NodeIndexable},
 };
 
 use crate::{
     edge::{EdgeMut, EdgeRef},
     graph::{
         Cardinality, DensityHint, DirectedGraph, EditableGraph, Graph as NewGraph, UndirectedGraph,
+        storable::{StorableGraph, containers::DefaultVec},
     },
     id::Id,
     node::{NodeMut, NodeRef},
@@ -50,89 +52,6 @@ impl<N, E, Ty, Ix: IndexType + Display> NewGraph for OldGraph<N, E, Ty, Ix> {
     where
         Self: 'graph;
     type NodeId = NodeIndex<Ix>;
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum SourceOrTargetNotFound {
-    SourceNodeDoesNotExist,
-    TargetNodeDoesNotExist,
-}
-
-impl Display for SourceOrTargetNotFound {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            SourceOrTargetNotFound::SourceNodeDoesNotExist => {
-                write!(f, "source node does not exist")
-            }
-            SourceOrTargetNotFound::TargetNodeDoesNotExist => {
-                write!(f, "target node does not exist")
-            }
-        }
-    }
-}
-
-impl core::error::Error for SourceOrTargetNotFound {}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct NotFoundError<T> {
-    pub id: T,
-}
-
-impl<T> Display for NotFoundError<T>
-where
-    T: Display,
-{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "id {} does not exist", self.id)
-    }
-}
-
-impl<T: Display + Debug> core::error::Error for NotFoundError<T> {}
-
-impl<N, E, Dir, Ix> EditableGraph for OldGraph<N, E, Dir, Ix>
-where
-    Dir: petgraph_old::EdgeType,
-    Ix: IndexType + Display,
-{
-    type AddEdgeError = SourceOrTargetNotFound;
-    type AddNodeError = Infallible;
-    type OwnedEdgeData = E;
-    type OwnedNodeData = N;
-    type RemoveEdgeError = NotFoundError<EdgeIndex<Ix>>;
-    type RemoveNodeError = NotFoundError<NodeIndex<Ix>>;
-
-    fn add_node(&mut self, data: Self::OwnedNodeData) -> Result<Self::NodeId, Self::AddNodeError> {
-        Ok(self.add_node(data))
-    }
-
-    fn add_edge(
-        &mut self,
-        source: Self::NodeId,
-        target: Self::NodeId,
-        data: Self::OwnedEdgeData,
-    ) -> Result<Self::EdgeId, Self::AddEdgeError> {
-        if self.node_weight(source).is_none() {
-            return Err(SourceOrTargetNotFound::SourceNodeDoesNotExist);
-        }
-        if self.node_weight(target).is_none() {
-            return Err(SourceOrTargetNotFound::TargetNodeDoesNotExist);
-        }
-        Ok(self.add_edge(source, target, data))
-    }
-
-    fn remove_node(
-        &mut self,
-        id: Self::NodeId,
-    ) -> Result<Self::OwnedNodeData, Self::RemoveNodeError> {
-        self.remove_node(id).ok_or(NotFoundError { id })
-    }
-
-    fn remove_edge(
-        &mut self,
-        id: Self::EdgeId,
-    ) -> Result<Self::OwnedEdgeData, Self::RemoveEdgeError> {
-        self.remove_edge(id).ok_or(NotFoundError { id })
-    }
 }
 
 impl<N, E, Ix: IndexType + Display> DirectedGraph for OldGraph<N, E, Directed, Ix> {
@@ -285,9 +204,13 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for OldGraph<N, E, Directed, I
     ///
     /// Performance note: Due to restrictions in the API of [`Graph`](petgraph_old::Graph) this
     /// iterates over all neighbors to count them, which may be inefficient for large graphs.
+    ///
+    /// If the graph has self-loops, they are counted twice.
     #[inline]
     fn degree(&self, node: Self::NodeId) -> usize {
-        self.neighbors_undirected(node).count()
+        self.neighbors_undirected(node)
+            .map(|n| if n == node { 2 } else { 1 })
+            .sum()
     }
 
     // Edges by direction
@@ -340,7 +263,12 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for OldGraph<N, E, Directed, I
     #[inline]
     fn incident_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
         self.edges_directed(node, Direction::Incoming)
-            .chain(self.edges_directed(node, Direction::Outgoing))
+            .chain(
+                self.edges_directed(node, Direction::Outgoing)
+                    .filter(move |old_edge_ref| {
+                        old_edge_ref.source() != node || old_edge_ref.target() != node
+                    }),
+            )
             .map(|old_edge_ref| EdgeRef::<'_, Self> {
                 id: old_edge_ref.id(),
                 source: old_edge_ref.source(),
@@ -376,7 +304,8 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for OldGraph<N, E, Directed, I
 
     #[inline]
     fn adjacencies(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
-        self.neighbors_undirected(node)
+        self.neighbors_directed(node, Direction::Incoming)
+            .chain(self.neighbors_directed(node, Direction::Outgoing))
     }
 
     // Edges between nodes
@@ -418,7 +347,10 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for OldGraph<N, E, Directed, I
         rhs: Self::NodeId,
     ) -> impl Iterator<Item = EdgeRef<'_, Self>> {
         self.edges_connecting(lhs, rhs)
-            .chain(self.edges_connecting(rhs, lhs))
+            .chain(
+                self.edges_connecting(rhs, lhs)
+                    .filter(move |edge| edge.source() != edge.target()),
+            )
             .map(|edge| EdgeRef::<'_, Self> {
                 id: edge.id(),
                 source: edge.source(),
@@ -600,7 +532,9 @@ impl<N, E, Ix: IndexType + Display> UndirectedGraph for OldGraph<N, E, Undirecte
     // Degree
     #[inline]
     fn degree(&self, node: Self::NodeId) -> usize {
-        self.neighbors(node).count()
+        self.neighbors(node)
+            .map(|n| if n == node { 2 } else { 1 })
+            .sum()
     }
 
     // Incidence
@@ -679,13 +613,175 @@ impl<N, E, Ix: IndexType + Display> UndirectedGraph for OldGraph<N, E, Undirecte
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SourceOrTargetNotFound {
+    SourceNodeDoesNotExist,
+    TargetNodeDoesNotExist,
+}
+
+impl Display for SourceOrTargetNotFound {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            SourceOrTargetNotFound::SourceNodeDoesNotExist => {
+                write!(f, "source node does not exist")
+            }
+            SourceOrTargetNotFound::TargetNodeDoesNotExist => {
+                write!(f, "target node does not exist")
+            }
+        }
+    }
+}
+
+impl core::error::Error for SourceOrTargetNotFound {}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NotFoundError<T> {
+    pub id: T,
+}
+
+impl<T> Display for NotFoundError<T>
+where
+    T: Display,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "id {} does not exist", self.id)
+    }
+}
+
+impl<T: Display + Debug> core::error::Error for NotFoundError<T> {}
+
+impl<N, E, Dir, Ix> EditableGraph for OldGraph<N, E, Dir, Ix>
+where
+    Dir: petgraph_old::EdgeType,
+    Ix: IndexType + Display,
+{
+    type AddEdgeError = SourceOrTargetNotFound;
+    type AddNodeError = Infallible;
+    type OwnedEdgeData = E;
+    type OwnedNodeData = N;
+    type RemoveEdgeError = NotFoundError<EdgeIndex<Ix>>;
+    type RemoveNodeError = NotFoundError<NodeIndex<Ix>>;
+
+    fn add_node(&mut self, data: Self::OwnedNodeData) -> Result<Self::NodeId, Self::AddNodeError> {
+        Ok(self.add_node(data))
+    }
+
+    fn add_edge(
+        &mut self,
+        source: Self::NodeId,
+        target: Self::NodeId,
+        data: Self::OwnedEdgeData,
+    ) -> Result<Self::EdgeId, Self::AddEdgeError> {
+        if self.node_weight(source).is_none() {
+            return Err(SourceOrTargetNotFound::SourceNodeDoesNotExist);
+        }
+        if self.node_weight(target).is_none() {
+            return Err(SourceOrTargetNotFound::TargetNodeDoesNotExist);
+        }
+        Ok(self.add_edge(source, target, data))
+    }
+
+    fn remove_node(
+        &mut self,
+        id: Self::NodeId,
+    ) -> Result<Self::OwnedNodeData, Self::RemoveNodeError> {
+        self.remove_node(id).ok_or(NotFoundError { id })
+    }
+
+    fn remove_edge(
+        &mut self,
+        id: Self::EdgeId,
+    ) -> Result<Self::OwnedEdgeData, Self::RemoveEdgeError> {
+        self.remove_edge(id).ok_or(NotFoundError { id })
+    }
+}
+
+impl<N, E, Dir, Ix> StorableGraph for OldGraph<N, E, Dir, Ix>
+where
+    Dir: petgraph_old::EdgeType,
+    Ix: IndexType + Display,
+{
+    type EdgeDataContainer<Data: Clone> = DefaultVec<Data>;
+    type EdgeVisitContainer = FixedBitSet;
+    type NodeDataContainer<Data: Clone> = DefaultVec<Data>;
+    type NodeVisitContainer = FixedBitSet;
+
+    fn node_visit_container(&self) -> Self::NodeVisitContainer {
+        FixedBitSet::with_capacity(self.node_bound())
+    }
+
+    fn node_data_container<Data: Clone>(
+        &self,
+        default_value: Data,
+    ) -> Self::NodeDataContainer<Data> {
+        DefaultVec::new_with_capacity(default_value, self.node_bound())
+    }
+
+    fn edge_visit_container(&self) -> Self::EdgeVisitContainer {
+        FixedBitSet::with_capacity(self.edge_count())
+    }
+
+    fn edge_data_container<Data: Clone>(
+        &self,
+        default_value: Data,
+    ) -> Self::EdgeDataContainer<Data> {
+        DefaultVec::new_with_capacity(default_value, self.edge_count())
+    }
+}
+
 #[cfg(test)]
 mod test {
 
     use super::{Directed, OldGraph, Undirected};
-    use crate::{test_directed_graph, test_undirected_graph};
+    use crate::{
+        test_directed_graph, test_directed_graph_parallel_edges, test_directed_graph_self_loops,
+        test_undirected_graph, test_undirected_graph_parallel_edges,
+        test_undirected_graph_self_loops,
+    };
 
-    test_directed_graph!(OldGraph::<(), (), Directed>::new,);
+    mod directed {
+        use super::*;
+        use crate::{
+            test_directed_editable_graph, test_directed_editable_graph_parallel_edges,
+            test_directed_editable_graph_self_loops, test_directed_storable_graph,
+            test_directed_storable_graph_parallel_edges, test_directed_storable_graph_self_loops,
+        };
+        test_directed_graph!(OldGraph::<(), (), Directed>::new,);
+        test_directed_graph_parallel_edges!(OldGraph::<(), (), Directed>::new,);
+        test_directed_graph_self_loops!(OldGraph::<(), (), Directed>::new,);
 
-    test_undirected_graph!(OldGraph::<(), (), Undirected>::new_undirected,);
+        test_directed_editable_graph!(OldGraph::<(), (), Directed>::new,);
+        test_directed_editable_graph_parallel_edges!(OldGraph::<(), (), Directed>::new,);
+        test_directed_editable_graph_self_loops!(OldGraph::<(), (), Directed>::new,);
+
+        test_directed_storable_graph!(OldGraph::<(), (), Directed>::new,);
+        test_directed_storable_graph_parallel_edges!(OldGraph::<(), (), Directed>::new,);
+        test_directed_storable_graph_self_loops!(OldGraph::<(), (), Directed>::new,);
+    }
+
+    mod undirected {
+        use super::*;
+        use crate::{
+            test_undirected_editable_graph, test_undirected_editable_graph_parallel_edges,
+            test_undirected_editable_graph_self_loops, test_undirected_storable_graph,
+            test_undirected_storable_graph_parallel_edges,
+            test_undirected_storable_graph_self_loops,
+        };
+
+        test_undirected_graph!(OldGraph::<(), (), Undirected>::new_undirected,);
+        test_undirected_graph_parallel_edges!(OldGraph::<(), (), Undirected>::new_undirected,);
+        test_undirected_graph_self_loops!(OldGraph::<(), (), Undirected>::new_undirected,);
+
+        test_undirected_editable_graph!(OldGraph::<(), (), Undirected>::new_undirected,);
+        test_undirected_editable_graph_parallel_edges!(
+            OldGraph::<(), (), Undirected>::new_undirected,
+        );
+        test_undirected_editable_graph_self_loops!(OldGraph::<(), (), Undirected>::new_undirected,);
+
+        test_undirected_storable_graph!(OldGraph::<(), (), Undirected>::new_undirected,);
+        test_undirected_storable_graph_parallel_edges!(
+            OldGraph::<(), (), Undirected>::new_undirected,
+        );
+        test_undirected_storable_graph_self_loops!(OldGraph::<(), (), Undirected>::new_undirected,);
+    }
 }

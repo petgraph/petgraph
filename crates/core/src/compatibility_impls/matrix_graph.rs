@@ -723,9 +723,9 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
     // Degree
     #[inline]
     fn degree(&self, node: Self::NodeId) -> usize {
-        self.neighbors(node).count()
-        // Count self loops twice
-        + self.contains_edge(UnMatrixGraphEdgeId::new(node, node)) as usize
+        self.neighbors(node)
+            .map(|n| if n == node { 2 } else { 1 })
+            .sum()
     }
 
     // Incidence
