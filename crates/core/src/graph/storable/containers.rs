@@ -202,7 +202,7 @@ impl<Id: core::hash::Hash + core::cmp::Eq, S: core::hash::BuildHasher> VisitCont
 #[cfg(feature = "hashbrown")]
 pub struct DefaultHashMapHashbrown<Id, Data, S = hashbrown::DefaultHashBuilder> {
     pub map: HashbrownHashMap<Id, Data, S>,
-    default: Data,
+    pub default: Data,
 }
 
 #[cfg(feature = "hashbrown")]

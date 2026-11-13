@@ -7,17 +7,17 @@ use core::{
 #[cfg(feature = "hashbrown")]
 use hashbrown::{HashMap, HashSet};
 use petgraph_old::{
-    Directed, Direction, Undirected,
+    Directed, Direction, EdgeType, Undirected,
     graphmap::{GraphMap, NodeTrait},
 };
 
+use self::__private::CommonGraphMap;
 #[cfg(feature = "hashbrown")]
-use crate::graph::storable::containers::DefaultHashMapHashbrown;
+use crate::graph::storable::{StorableGraph, containers::DefaultHashMapHashbrown};
 use crate::{
     edge::{EdgeMut, EdgeRef},
     graph::{
         Cardinality, DensityHint, DirectedGraph, EditableGraph, Graph as NewGraph, UndirectedGraph,
-        storable::{DataContainer, StorableGraph},
     },
     id::Id,
     node::{NodeMut, NodeRef},
@@ -88,6 +88,18 @@ impl<N: NodeTraitBounds, E, S: BuildHasher> NewGraph for GraphMap<N, E, Directed
     type NodeId = N;
 }
 
+impl<N: NodeTraitBounds, E, S: BuildHasher> CommonGraphMap for GraphMap<N, E, Directed, S> {
+    #[inline]
+    fn edge_id(source: N, target: N) -> Self::EdgeId {
+        DirGraphMapEdgeId::new(source, target)
+    }
+
+    #[inline]
+    fn edge_endpoints(id: Self::EdgeId) -> (N, N) {
+        (id.source, id.target)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SourceOrTargetNotFound {
     SourceNodeDoesNotExist,
@@ -124,58 +136,6 @@ where
 }
 
 impl<T: Display + Debug> core::error::Error for NotFoundError<T> {}
-
-impl<N, E, S> EditableGraph for GraphMap<N, E, Directed, S>
-where
-    N: NodeTraitBounds,
-    S: BuildHasher,
-{
-    type AddEdgeError = SourceOrTargetNotFound;
-    type AddNodeError = Infallible;
-    type OwnedEdgeData = E;
-    type OwnedNodeData = N;
-    type RemoveEdgeError = NotFoundError<DirGraphMapEdgeId<N>>;
-    type RemoveNodeError = NotFoundError<N>;
-
-    fn add_node(&mut self, data: Self::OwnedNodeData) -> Result<Self::NodeId, Self::AddNodeError> {
-        Ok(self.add_node(data))
-    }
-
-    fn add_edge(
-        &mut self,
-        source: Self::NodeId,
-        target: Self::NodeId,
-        data: Self::OwnedEdgeData,
-    ) -> Result<Self::EdgeId, Self::AddEdgeError> {
-        if !self.contains_node(source) {
-            return Err(SourceOrTargetNotFound::SourceNodeDoesNotExist);
-        }
-        if !self.contains_node(target) {
-            return Err(SourceOrTargetNotFound::TargetNodeDoesNotExist);
-        }
-        let _ = self.add_edge(source, target, data);
-        Ok(DirGraphMapEdgeId::new(source, target))
-    }
-
-    fn remove_node(
-        &mut self,
-        id: Self::NodeId,
-    ) -> Result<Self::OwnedNodeData, Self::RemoveNodeError> {
-        if self.remove_node(id) {
-            Ok(id)
-        } else {
-            Err(NotFoundError { id })
-        }
-    }
-
-    fn remove_edge(
-        &mut self,
-        id: Self::EdgeId,
-    ) -> Result<Self::OwnedEdgeData, Self::RemoveEdgeError> {
-        self.remove_edge(id.source, id.target)
-            .ok_or(NotFoundError { id })
-    }
-}
 
 impl<N: NodeTraitBounds, E, S: BuildHasher> DirectedGraph for GraphMap<N, E, Directed, S> {
     #[inline]
@@ -605,55 +565,15 @@ impl<N: NodeTraitBounds, E, S: BuildHasher> NewGraph for GraphMap<N, E, Undirect
     type NodeId = N;
 }
 
-impl<N, E, S> EditableGraph for GraphMap<N, E, Undirected, S>
-where
-    N: NodeTraitBounds,
-    S: BuildHasher,
-{
-    type AddEdgeError = SourceOrTargetNotFound;
-    type AddNodeError = Infallible;
-    type OwnedEdgeData = E;
-    type OwnedNodeData = N;
-    type RemoveEdgeError = NotFoundError<UnGraphMapEdgeId<N>>;
-    type RemoveNodeError = NotFoundError<N>;
-
-    fn add_node(&mut self, data: Self::OwnedNodeData) -> Result<Self::NodeId, Self::AddNodeError> {
-        Ok(self.add_node(data))
+impl<N: NodeTraitBounds, E, S: BuildHasher> CommonGraphMap for GraphMap<N, E, Undirected, S> {
+    #[inline]
+    fn edge_id(source: N, target: N) -> Self::EdgeId {
+        UnGraphMapEdgeId::new(source, target)
     }
 
-    fn add_edge(
-        &mut self,
-        source: Self::NodeId,
-        target: Self::NodeId,
-        data: Self::OwnedEdgeData,
-    ) -> Result<Self::EdgeId, Self::AddEdgeError> {
-        if !self.contains_node(source) {
-            return Err(SourceOrTargetNotFound::SourceNodeDoesNotExist);
-        }
-        if !self.contains_node(target) {
-            return Err(SourceOrTargetNotFound::TargetNodeDoesNotExist);
-        }
-        let _ = self.add_edge(source, target, data);
-        Ok(UnGraphMapEdgeId::new(source, target))
-    }
-
-    fn remove_node(
-        &mut self,
-        id: Self::NodeId,
-    ) -> Result<Self::OwnedNodeData, Self::RemoveNodeError> {
-        if self.remove_node(id) {
-            Ok(id)
-        } else {
-            Err(NotFoundError { id })
-        }
-    }
-
-    fn remove_edge(
-        &mut self,
-        id: Self::EdgeId,
-    ) -> Result<Self::OwnedEdgeData, Self::RemoveEdgeError> {
-        self.remove_edge(id.source, id.target)
-            .ok_or(NotFoundError { id })
+    #[inline]
+    fn edge_endpoints(id: Self::EdgeId) -> (N, N) {
+        (id.source, id.target)
     }
 }
 
@@ -858,73 +778,117 @@ impl<N: NodeTraitBounds, E, S: BuildHasher> UndirectedGraph for GraphMap<N, E, U
     }
 }
 
-pub struct GraphMapEdgeDataContainer<N, E, S>
+impl<N, E, Dir, S> EditableGraph for GraphMap<N, E, Dir, S>
 where
     N: NodeTraitBounds,
+    Dir: EdgeType,
     S: BuildHasher,
+    Self: CommonGraphMap<NodeId = N>,
 {
-    pub map: HashMap<(N, N), E, S>,
-}
+    type AddEdgeError = SourceOrTargetNotFound;
+    type AddNodeError = Infallible;
+    type OwnedEdgeData = E;
+    type OwnedNodeData = N;
+    type RemoveEdgeError = NotFoundError<Self::EdgeId>;
+    type RemoveNodeError = NotFoundError<N>;
 
-impl<N, E, S> DataContainer< for GraphMapEdgeDataContainer<N, E, S>
-where
-    N: NodeTraitBounds,
-    E: Clone,
-    S: BuildHasher,
-{
-    fn get(&self, id: Id) -> &Data {
-        self.map
-            .get(&(id.source, id.target))
-            .expect("Edge data not found")
+    fn add_node(&mut self, data: Self::OwnedNodeData) -> Result<Self::NodeId, Self::AddNodeError> {
+        Ok(self.add_node(data))
     }
 
-    fn get_mut(&mut self, id: Id) -> &mut Data {
-        todo!()
+    fn add_edge(
+        &mut self,
+        source: Self::NodeId,
+        target: Self::NodeId,
+        data: Self::OwnedEdgeData,
+    ) -> Result<Self::EdgeId, Self::AddEdgeError> {
+        if !self.contains_node(source) {
+            return Err(SourceOrTargetNotFound::SourceNodeDoesNotExist);
+        }
+        if !self.contains_node(target) {
+            return Err(SourceOrTargetNotFound::TargetNodeDoesNotExist);
+        }
+        let _ = self.add_edge(source, target, data);
+        Ok(Self::edge_id(source, target))
     }
 
-    fn insert(&mut self, id: Id, data: Data) {
-        todo!()
+    fn remove_node(
+        &mut self,
+        id: Self::NodeId,
+    ) -> Result<Self::OwnedNodeData, Self::RemoveNodeError> {
+        if self.remove_node(id) {
+            Ok(id)
+        } else {
+            Err(NotFoundError { id })
+        }
     }
 
-    fn remove(&mut self, id: Id) {
-        todo!()
-    }
-
-    fn clear(&mut self) {
-        todo!()
+    fn remove_edge(
+        &mut self,
+        id: Self::EdgeId,
+    ) -> Result<Self::OwnedEdgeData, Self::RemoveEdgeError> {
+        let (source, target) = Self::edge_endpoints(id);
+        self.remove_edge(source, target).ok_or(NotFoundError { id })
     }
 }
 
 #[cfg(feature = "hashbrown")]
-impl<N: NodeTraitBounds, E, Dir, S: BuildHasher> StorableGraph for GraphMap<N, E, Dir, S>
+impl<N, E, Dir, S> StorableGraph for GraphMap<N, E, Dir, S>
 where
-    GraphMap<N, E, Dir, S>: NewGraph<NodeId = N>,
+    N: NodeTraitBounds,
+    Dir: EdgeType,
+    S: BuildHasher + Default,
+    Self: CommonGraphMap<NodeId = N>,
 {
-    type EdgeDataContainer<Data: Clone> =
-        GraphMapEdgeDataContainer<(Self::NodeId, Self::NodeId), Data, S>;
-    type EdgeVisitContainer = HashSet<(Self::NodeId, Self::NodeId), S>;
-    type NodeDataContainer<Data: Clone> = DefaultHashMapHashbrown<Self::NodeId, Data, S>;
-    type NodeVisitContainer = HashSet<Self::NodeId, S>;
+    type EdgeDataContainer<Data: Clone> = DefaultHashMapHashbrown<Self::EdgeId, Data, S>;
+    type EdgeVisitContainer = HashSet<Self::EdgeId, S>;
+    type NodeDataContainer<Data: Clone> = DefaultHashMapHashbrown<N, Data, S>;
+    type NodeVisitContainer = HashSet<N, S>;
 
     fn node_visit_container(&self) -> Self::NodeVisitContainer {
-        todo!()
+        HashSet::default()
     }
 
     fn node_data_container<Data: Clone>(
         &self,
         default_value: Data,
     ) -> Self::NodeDataContainer<Data> {
-        todo!()
+        DefaultHashMapHashbrown::<N, Data, S> {
+            map: HashMap::default(),
+            default: default_value,
+        }
     }
 
     fn edge_visit_container(&self) -> Self::EdgeVisitContainer {
-        todo!()
+        HashSet::default()
     }
 
     fn edge_data_container<Data: Clone>(
         &self,
         default_value: Data,
     ) -> Self::EdgeDataContainer<Data> {
-        todo!()
+        DefaultHashMapHashbrown::<Self::EdgeId, Data, S> {
+            map: HashMap::default(),
+            default: default_value,
+        }
+    }
+}
+
+// WARNING: This module contains only internal helpers and should not be considered part of the
+// public API. It is subject to change at any time.
+#[doc(hidden)]
+mod __private {
+    use core::hash::Hash;
+
+    use crate::graph::Graph;
+
+    /// Functionality shared by directed and undirected
+    /// [`GraphMap`](petgraph_old::graphmap::GraphMap)s.
+    pub trait CommonGraphMap: Graph<EdgeId: Hash + Eq> {
+        /// Returns the `EdgeId` of the edge from `source` to `target`.
+        fn edge_id(source: Self::NodeId, target: Self::NodeId) -> Self::EdgeId;
+
+        /// Returns the `(source, target)` node ids of the edge with the given `EdgeId`.
+        fn edge_endpoints(id: Self::EdgeId) -> (Self::NodeId, Self::NodeId);
     }
 }
