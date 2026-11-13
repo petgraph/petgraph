@@ -750,10 +750,10 @@ pub enum SourceOrTargetNotFound {
 impl Display for SourceOrTargetNotFound {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            SourceOrTargetNotFound::SourceNodeDoesNotExist => {
+            Self::SourceNodeDoesNotExist => {
                 write!(f, "source node does not exist")
             }
-            SourceOrTargetNotFound::TargetNodeDoesNotExist => {
+            Self::TargetNodeDoesNotExist => {
                 write!(f, "target node does not exist")
             }
         }
