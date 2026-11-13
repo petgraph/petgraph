@@ -1,15 +1,30 @@
-use core::{fmt::Display, hash::BuildHasher};
+use core::{
+    fmt::{self, Debug, Display},
+    hash::BuildHasher,
+};
 
+#[cfg(feature = "hashbrown")]
+use hashbrown::{HashMap, HashSet};
+#[cfg(feature = "hashbrown")]
+use petgraph_old::visit::NodeIndexable;
 use petgraph_old::{
-    Directed, Direction, Undirected,
+    Directed, Direction, EdgeType, Undirected,
     csr::IndexType,
-    matrix_graph::{MatrixGraph, NodeIndex, Nullable},
+    matrix_graph::{MatrixError, MatrixGraph, NodeIndex, Nullable},
     visit::IntoNodeReferences,
 };
 
+use self::__private::CommonMatrixGraph;
+#[cfg(feature = "hashbrown")]
+use crate::graph::storable::{
+    StorableGraph,
+    containers::{DefaultHashMapHashbrown, DefaultVec},
+};
 use crate::{
     edge::{EdgeMut, EdgeRef},
-    graph::{Cardinality, DensityHint, DirectedGraph, Graph as NewGraph, UndirectedGraph},
+    graph::{
+        Cardinality, DensityHint, DirectedGraph, EditableGraph, Graph as NewGraph, UndirectedGraph,
+    },
     id::Id,
     node::{NodeMut, NodeRef},
 };
@@ -17,14 +32,11 @@ use crate::{
 /// `EdgeId` type for the compatibility implementation of the [`Graph`](crate::graph::Graph) trait
 /// for directed [`MatrixGraph`](petgraph_old::matrix_graph::MatrixGraph).
 ///
-/// This is a wrapper around the source and target node ids of the edge, since `MatrixGraph` does
-/// not have a unique edge id type.
-///
-/// For the undirected version, see [`UndirMatrixGraphEdgeId`].
+/// For the undirected version, see [`UnMatrixGraphEdgeId`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct DirMatrixGraphEdgeId<Ix> {
-    pub source: NodeIndex<Ix>,
-    pub target: NodeIndex<Ix>,
+    source: NodeIndex<Ix>,
+    target: NodeIndex<Ix>,
     _private: (),
 }
 
@@ -35,6 +47,14 @@ impl<Ix> DirMatrixGraphEdgeId<Ix> {
             target,
             _private: (),
         }
+    }
+
+    pub const fn source(&self) -> &NodeIndex<Ix> {
+        &self.source
+    }
+
+    pub const fn target(&self) -> &NodeIndex<Ix> {
+        &self.target
     }
 }
 
@@ -75,6 +95,20 @@ impl<N, E, S, Null: Nullable<Wrapped = E>, Ix: IndexType + Display> NewGraph
     where
         Self: 'graph;
     type NodeId = NodeIndex<Ix>;
+}
+
+impl<N, E, S, Null: Nullable<Wrapped = E>, Ix: IndexType + Display> CommonMatrixGraph
+    for MatrixGraph<N, E, S, Directed, Null, Ix>
+{
+    #[inline]
+    fn edge_id(source: NodeIndex<Ix>, target: NodeIndex<Ix>) -> Self::EdgeId {
+        DirMatrixGraphEdgeId::new(source, target)
+    }
+
+    #[inline]
+    fn edge_endpoints(id: Self::EdgeId) -> (NodeIndex<Ix>, NodeIndex<Ix>) {
+        (id.source, id.target)
+    }
 }
 
 impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display> DirectedGraph
@@ -297,15 +331,21 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
                 target,
                 data,
             })
-            .chain(
-                self.edges_directed(node, Direction::Outgoing)
-                    .map(|(source, target, data)| EdgeRef::<'_, Self> {
-                        id: DirMatrixGraphEdgeId::new(source, target),
-                        source,
-                        target,
-                        data,
-                    }),
-            )
+            .chain(self.edges_directed(node, Direction::Outgoing).filter_map(
+                move |(source, target, data)| {
+                    // Count self loops only once
+                    if target != node {
+                        Some(EdgeRef::<'_, Self> {
+                            id: DirMatrixGraphEdgeId::new(source, target),
+                            source,
+                            target,
+                            data,
+                        })
+                    } else {
+                        None
+                    }
+                },
+            ))
     }
 
     /// Mutable iterator over incident edges of node. That is, all edges where node is either
@@ -389,14 +429,18 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
     /// Performance note: Due to restrictions in the API of
     /// [`MatrixGraph`](petgraph_old::matrix_graph::MatrixGraph) this is implemented by
     /// chaining two [`Self::edges_between`] calls, which may be inefficient for large graphs.
+    ///
+    /// Note that if lhs == rhs, then self-loops are returned only once.
     #[inline]
     fn edges_connecting(
         &self,
         lhs: Self::NodeId,
         rhs: Self::NodeId,
     ) -> impl Iterator<Item = EdgeRef<'_, Self>> {
-        self.edges_between(lhs, rhs)
-            .chain(self.edges_between(rhs, lhs))
+        self.edges_between(lhs, rhs).chain(
+            self.edges_between(rhs, lhs)
+                .filter(move |edge| edge.source != edge.target),
+        )
     }
 
     /// Mutable iterator over all edges connecting lhs and rhs, regardless of direction.
@@ -404,6 +448,8 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
     /// Performance note: Due to restrictions in the API of
     /// [`MatrixGraph`](petgraph_old::matrix_graph::MatrixGraph) this is implemented by filtering
     /// [`Self::edges_mut`], which may be inefficient for large graphs.
+    ///
+    /// Note that if lhs == rhs, then self-loops are returned only once.
     #[inline]
     fn edges_connecting_mut(
         &mut self,
@@ -454,24 +500,15 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
 /// `EdgeId` type for the compatibility implementation of the [`Graph`](crate::graph::Graph) trait
 /// for undirected [`MatrixGraph`](petgraph_old::matrix_graph::MatrixGraph).
 ///
-/// This is a wrapper around the source and target node ids of the edge, since `MatrixGraph` does
-/// not have a unique edge id type.
-///
-/// When creating an instance of this type, the source and target node
-/// ids will be sorted so that the smaller node id is always the source and the larger node id is
-/// always the target. This ensures that the same (undirected) edge is always represented by the
-/// same `UndirMatrixGraphEdgeId` instance, regardless of the order of the node ids when creating
-/// it.
-///
 /// For the directed version, see [`DirMatrixGraphEdgeId`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct UndirMatrixGraphEdgeId<Ix> {
-    pub source: NodeIndex<Ix>,
-    pub target: NodeIndex<Ix>,
+pub struct UnMatrixGraphEdgeId<Ix> {
+    source: NodeIndex<Ix>,
+    target: NodeIndex<Ix>,
     _private: (),
 }
 
-impl<Ix: IndexType> UndirMatrixGraphEdgeId<Ix> {
+impl<Ix: IndexType> UnMatrixGraphEdgeId<Ix> {
     pub fn new(source: NodeIndex<Ix>, target: NodeIndex<Ix>) -> Self {
         if source.index() <= target.index() {
             Self {
@@ -487,19 +524,23 @@ impl<Ix: IndexType> UndirMatrixGraphEdgeId<Ix> {
             }
         }
     }
-}
 
-impl<Ix: IndexType + Display> Display for UndirMatrixGraphEdgeId<Ix> {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        if self.source.index() <= self.target.index() {
-            write!(f, "Edge({}, {})", self.source, self.target)
-        } else {
-            write!(f, "Edge({}, {})", self.target, self.source)
-        }
+    pub fn source(&self) -> &NodeIndex<Ix> {
+        &self.source
+    }
+
+    pub fn target(&self) -> &NodeIndex<Ix> {
+        &self.target
     }
 }
 
-impl<Ix: IndexType + Display> Id for UndirMatrixGraphEdgeId<Ix> {}
+impl<Ix: IndexType + Display> Display for UnMatrixGraphEdgeId<Ix> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "Edge({}, {})", self.source, self.target)
+    }
+}
+
+impl<Ix: IndexType + Display> Id for UnMatrixGraphEdgeId<Ix> {}
 
 impl<N, E, S, Null: Nullable<Wrapped = E>, Ix: IndexType + Display> NewGraph
     for MatrixGraph<N, E, S, Undirected, Null, Ix>
@@ -516,7 +557,7 @@ impl<N, E, S, Null: Nullable<Wrapped = E>, Ix: IndexType + Display> NewGraph
         = &'graph E
     where
         Self: 'graph;
-    type EdgeId = UndirMatrixGraphEdgeId<Ix>;
+    type EdgeId = UnMatrixGraphEdgeId<Ix>;
     type NodeData<'graph>
         = N
     where
@@ -530,6 +571,20 @@ impl<N, E, S, Null: Nullable<Wrapped = E>, Ix: IndexType + Display> NewGraph
     where
         Self: 'graph;
     type NodeId = NodeIndex<Ix>;
+}
+
+impl<N, E, S, Null: Nullable<Wrapped = E>, Ix: IndexType + Display> CommonMatrixGraph
+    for MatrixGraph<N, E, S, Undirected, Null, Ix>
+{
+    #[inline]
+    fn edge_id(source: NodeIndex<Ix>, target: NodeIndex<Ix>) -> Self::EdgeId {
+        UnMatrixGraphEdgeId::new(source, target)
+    }
+
+    #[inline]
+    fn edge_endpoints(id: Self::EdgeId) -> (NodeIndex<Ix>, NodeIndex<Ix>) {
+        (id.source, id.target)
+    }
 }
 
 impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display> UndirectedGraph
@@ -581,7 +636,7 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
     fn edges(&self) -> impl Iterator<Item = EdgeRef<'_, Self>> {
         self.all_edges()
             .map(|(source, target, data)| EdgeRef::<'_, Self> {
-                id: UndirMatrixGraphEdgeId::new(source, target),
+                id: UnMatrixGraphEdgeId::new(source, target),
                 source,
                 target,
                 data,
@@ -597,7 +652,7 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
     fn edges_mut(&mut self) -> impl Iterator<Item = EdgeMut<'_, Self>> {
         self.all_edges_mut()
             .map(|(source, target, data)| EdgeMut::<'_, Self> {
-                id: UndirMatrixGraphEdgeId::new(source, target),
+                id: UnMatrixGraphEdgeId::new(source, target),
                 source,
                 target,
                 data,
@@ -669,6 +724,8 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
     #[inline]
     fn degree(&self, node: Self::NodeId) -> usize {
         self.neighbors(node).count()
+        // Count self loops twice
+        + self.contains_edge(UnMatrixGraphEdgeId::new(node, node)) as usize
     }
 
     // Incidence
@@ -676,7 +733,7 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
     fn incident_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
         self.edges(node)
             .map(|(source, target, data)| EdgeRef::<'_, Self> {
-                id: UndirMatrixGraphEdgeId::new(source, target),
+                id: UnMatrixGraphEdgeId::new(source, target),
                 source,
                 target,
                 data,
@@ -705,6 +762,8 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
     /// Performance note: Due to restrictions in the API of
     /// [`MatrixGraph`](petgraph_old::matrix_graph::MatrixGraph) this is implemented by
     /// filtering [`Self::incident_edges`], which may be inefficient for large graphs.
+    ///
+    /// Note that if lhs == rhs, then self-loops are returned only once.
     #[inline]
     fn edges_connecting(
         &self,
@@ -749,18 +808,198 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
     }
 }
 
-#[cfg(test)]
-mod test {
-    use petgraph_old::matrix_graph::{MatrixGraph, UnMatrix};
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SourceOrTargetNotFound {
+    SourceNodeDoesNotExist,
+    TargetNodeDoesNotExist,
+}
 
-    use super::Undirected;
-    use crate::{test_directed_graph, test_undirected_graph};
+impl Display for SourceOrTargetNotFound {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::SourceNodeDoesNotExist => {
+                write!(f, "source node does not exist")
+            }
+            Self::TargetNodeDoesNotExist => {
+                write!(f, "target node does not exist")
+            }
+        }
+    }
+}
 
-    test_directed_graph!(MatrixGraph::<(), ()>::new,);
+impl core::error::Error for SourceOrTargetNotFound {}
 
-    fn new_undir() -> UnMatrix<(), ()> {
-        MatrixGraph::<(), (), _, Undirected>::with_capacity(0)
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NotFoundError<T> {
+    pub id: T,
+}
+
+impl<T> Display for NotFoundError<T>
+where
+    T: Display,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "id {} does not exist", self.id)
+    }
+}
+
+impl<T: Display + Debug> core::error::Error for NotFoundError<T> {}
+
+impl<N, E, S, Dir, Null, Ix> EditableGraph for MatrixGraph<N, E, S, Dir, Null, Ix>
+where
+    S: BuildHasher,
+    Dir: EdgeType,
+    Null: Nullable<Wrapped = E>,
+    Ix: IndexType + Display,
+    Self: CommonMatrixGraph<NodeId = NodeIndex<Ix>>,
+{
+    type AddEdgeError = SourceOrTargetNotFound;
+    type AddNodeError = MatrixError;
+    type OwnedEdgeData = E;
+    type OwnedNodeData = N;
+    type RemoveEdgeError = NotFoundError<Self::EdgeId>;
+    type RemoveNodeError = NotFoundError<NodeIndex<Ix>>;
+
+    fn add_node(&mut self, data: Self::OwnedNodeData) -> Result<Self::NodeId, Self::AddNodeError> {
+        self.try_add_node(data)
     }
 
-    test_undirected_graph!(new_undir,);
+    fn add_edge(
+        &mut self,
+        source: Self::NodeId,
+        target: Self::NodeId,
+        data: Self::OwnedEdgeData,
+    ) -> Result<Self::EdgeId, Self::AddEdgeError> {
+        if !self.has_node(source) {
+            return Err(SourceOrTargetNotFound::SourceNodeDoesNotExist);
+        }
+        if !self.has_node(target) {
+            return Err(SourceOrTargetNotFound::TargetNodeDoesNotExist);
+        }
+        let _ = self.update_edge(source, target, data);
+        Ok(Self::edge_id(source, target))
+    }
+
+    fn remove_node(
+        &mut self,
+        id: Self::NodeId,
+    ) -> Result<Self::OwnedNodeData, Self::RemoveNodeError> {
+        if !self.has_node(id) {
+            return Err(NotFoundError { id });
+        }
+        Ok(self.remove_node(id))
+    }
+
+    fn remove_edge(
+        &mut self,
+        id: Self::EdgeId,
+    ) -> Result<Self::OwnedEdgeData, Self::RemoveEdgeError> {
+        let (source, target) = Self::edge_endpoints(id);
+        self.try_remove_edge(source, target)
+            .ok_or(NotFoundError { id })
+    }
+}
+
+#[cfg(feature = "hashbrown")]
+impl<N, E, S, Null, Ix> StorableGraph for MatrixGraph<N, E, S, Directed, Null, Ix>
+where
+    S: BuildHasher + Default,
+    Null: Nullable<Wrapped = E>,
+    Ix: IndexType + Display,
+{
+    // Change this to a more efficient container once the port_matrix_graph PR lands
+    type EdgeDataContainer<Data: Clone> = DefaultHashMapHashbrown<Self::EdgeId, Data, S>;
+    type EdgeVisitContainer = HashSet<Self::EdgeId, S>;
+    type NodeDataContainer<Data: Clone> = DefaultVec<Data>;
+    type NodeVisitContainer = HashSet<NodeIndex<Ix>, S>;
+
+    fn node_visit_container(&self) -> Self::NodeVisitContainer {
+        HashSet::default()
+    }
+
+    fn node_data_container<Data: Clone>(
+        &self,
+        default_value: Data,
+    ) -> Self::NodeDataContainer<Data> {
+        DefaultVec::new_with_capacity(default_value, self.node_bound())
+    }
+
+    fn edge_visit_container(&self) -> Self::EdgeVisitContainer {
+        HashSet::default()
+    }
+
+    fn edge_data_container<Data: Clone>(
+        &self,
+        default_value: Data,
+    ) -> Self::EdgeDataContainer<Data> {
+        DefaultHashMapHashbrown {
+            map: HashMap::default(),
+            default: default_value,
+        }
+    }
+}
+
+// WARNING: This module contains only internal helpers and should not be considered part of the
+// public API. It is subject to change at any time.
+#[doc(hidden)]
+mod __private {
+    use core::hash::Hash;
+
+    use crate::graph::Graph;
+
+    /// Functionality shared by directed and undirected
+    /// [`MatrixGraph`](petgraph_old::matrix_graph::MatrixGraph)s.
+    pub trait CommonMatrixGraph: Graph<EdgeId: Hash + Eq> {
+        /// Returns the `EdgeId` of the edge from `source` to `target`.
+        fn edge_id(source: Self::NodeId, target: Self::NodeId) -> Self::EdgeId;
+
+        /// Returns the `(source, target)` node ids of the edge with the given `EdgeId`.
+        fn edge_endpoints(id: Self::EdgeId) -> (Self::NodeId, Self::NodeId);
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use petgraph_old::matrix_graph::MatrixGraph;
+
+    use super::*;
+    use crate::{
+        test_directed_editable_graph, test_directed_editable_graph_self_loops, test_directed_graph,
+        test_directed_graph_self_loops, test_undirected_editable_graph,
+        test_undirected_editable_graph_self_loops, test_undirected_graph,
+        test_undirected_graph_self_loops,
+    };
+
+    mod directed {
+        use super::*;
+
+        test_directed_graph!(MatrixGraph::<(), (), foldhash::fast::RandomState, Directed>::new,);
+        test_directed_graph_self_loops!(
+            MatrixGraph::<(), (), foldhash::fast::RandomState, Directed>::new,
+        );
+
+        test_directed_editable_graph!(
+            MatrixGraph::<(), (), foldhash::fast::RandomState, Directed>::new,
+        );
+        test_directed_editable_graph_self_loops!(
+            MatrixGraph::<(), (), foldhash::fast::RandomState, Directed>::new,
+        );
+    }
+
+    mod undirected {
+        use super::*;
+
+        test_undirected_graph!(
+            MatrixGraph::<(), (), foldhash::fast::RandomState, Undirected>::new_undirected,
+        );
+        test_undirected_graph_self_loops!(
+            MatrixGraph::<(), (), foldhash::fast::RandomState, Undirected>::new_undirected,
+        );
+        test_undirected_editable_graph!(
+            MatrixGraph::<(), (), foldhash::fast::RandomState, Undirected>::new_undirected,
+        );
+        test_undirected_editable_graph_self_loops!(
+            MatrixGraph::<(), (), foldhash::fast::RandomState, Undirected>::new_undirected,
+        );
+    }
 }
