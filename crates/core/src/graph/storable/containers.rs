@@ -29,7 +29,7 @@ impl<Id: IndexId> VisitContainer<Id> for FixedBitSet {
 
 pub struct DefaultVec<Data> {
     pub vec: Vec<Data>,
-    default: Data,
+    pub default: Data,
 }
 
 impl<Data: Clone> DefaultVec<Data> {
@@ -148,7 +148,7 @@ impl<Data> QueueContainer<Data> for VecDeque<Data> {
 #[cfg(feature = "std")]
 pub struct DefaultHashMapStd<Id, Data, S = std::hash::RandomState> {
     pub map: StdHashMap<Id, Data, S>,
-    default: Data,
+    pub default: Data,
 }
 
 #[cfg(feature = "std")]

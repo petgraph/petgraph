@@ -100,43 +100,6 @@ impl<N: NodeTraitBounds, E, S: BuildHasher> CommonGraphMap for GraphMap<N, E, Di
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum SourceOrTargetNotFound {
-    SourceNodeDoesNotExist,
-    TargetNodeDoesNotExist,
-}
-
-impl Display for SourceOrTargetNotFound {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            SourceOrTargetNotFound::SourceNodeDoesNotExist => {
-                write!(f, "source node does not exist")
-            }
-            SourceOrTargetNotFound::TargetNodeDoesNotExist => {
-                write!(f, "target node does not exist")
-            }
-        }
-    }
-}
-
-impl core::error::Error for SourceOrTargetNotFound {}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct NotFoundError<T> {
-    pub id: T,
-}
-
-impl<T> Display for NotFoundError<T>
-where
-    T: Display,
-{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "id {} does not exist", self.id)
-    }
-}
-
-impl<T: Display + Debug> core::error::Error for NotFoundError<T> {}
-
 impl<N: NodeTraitBounds, E, S: BuildHasher> DirectedGraph for GraphMap<N, E, Directed, S> {
     #[inline]
     fn density_hint(&self) -> DensityHint {
@@ -777,6 +740,43 @@ impl<N: NodeTraitBounds, E, S: BuildHasher> UndirectedGraph for GraphMap<N, E, U
         self.node_count() == 0
     }
 }
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SourceOrTargetNotFound {
+    SourceNodeDoesNotExist,
+    TargetNodeDoesNotExist,
+}
+
+impl Display for SourceOrTargetNotFound {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            SourceOrTargetNotFound::SourceNodeDoesNotExist => {
+                write!(f, "source node does not exist")
+            }
+            SourceOrTargetNotFound::TargetNodeDoesNotExist => {
+                write!(f, "target node does not exist")
+            }
+        }
+    }
+}
+
+impl core::error::Error for SourceOrTargetNotFound {}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NotFoundError<T> {
+    pub id: T,
+}
+
+impl<T> Display for NotFoundError<T>
+where
+    T: Display,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "id {} does not exist", self.id)
+    }
+}
+
+impl<T: Display + Debug> core::error::Error for NotFoundError<T> {}
 
 impl<N, E, Dir, S> EditableGraph for GraphMap<N, E, Dir, S>
 where
