@@ -1,17 +1,24 @@
 use alloc::vec::Vec;
-use core::fmt::Display;
+use core::{
+    convert::Infallible,
+    fmt::{self, Debug, Display},
+};
 
+use fixedbitset::FixedBitSet;
 use petgraph_old::{
     Directed, Direction, Undirected,
     csr::IndexType,
     graph::{EdgeIndex, NodeIndex},
     prelude::StableGraph,
-    visit::{EdgeRef as _, IntoNodeReferences},
+    visit::{EdgeIndexable, EdgeRef as _, IntoNodeReferences, NodeIndexable},
 };
 
 use crate::{
     edge::{EdgeMut, EdgeRef},
-    graph::{Cardinality, DensityHint, DirectedGraph, Graph as NewGraph, UndirectedGraph},
+    graph::{
+        Cardinality, DensityHint, DirectedGraph, EditableGraph, Graph as NewGraph, UndirectedGraph,
+        storable::{StorableGraph, containers::DefaultVec},
+    },
     node::{NodeMut, NodeRef},
 };
 
@@ -75,16 +82,18 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for StableGraph<N, E, Directed
             .map(|(id, data)| NodeRef::<'_, Self> { id, data })
     }
 
+    /// Mutable iterator over all nodes.
+    ///
+    /// Performance note: Due to restrictions in the API of
+    /// [`StableGraph`](petgraph_old::stable_graph::StableGraph) this is implemented by first
+    /// collecting the node ids into a Vec and then combining that with the mutable node weights
+    /// iterator. Therefore, this may be inefficient and/or use more memory than expected for large
+    /// graphs.
     fn nodes_mut(&mut self) -> impl Iterator<Item = NodeMut<'_, Self>> {
-        // This returns the correct NodeIndexes because node_weights_mut() guarantees the values
-        // to be in order and Graph uses gap-less NodeIndexes from 0 to n-1 where n is the number of
-        // nodes.
+        let node_ids = self.node_indices().collect::<Vec<_>>();
         self.node_weights_mut()
-            .enumerate()
-            .map(|(idx, data)| NodeMut::<'_, Self> {
-                id: NodeIndex::new(idx),
-                data,
-            })
+            .zip(node_ids)
+            .map(|(data, id)| NodeMut::<'_, Self> { id, data })
     }
 
     /// Nodes with degree 0 (no incident edges).
@@ -202,9 +211,13 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for StableGraph<N, E, Directed
     /// Performance note: Due to restrictions in the API of
     /// [`StableGraph`](petgraph_old::stable_graph::StableGraph) this iterates over all
     /// neighbors to count them, which may be inefficient for large graphs.
+    ///
+    /// If the graph has self-loops, they are counted twice.
     #[inline]
     fn degree(&self, node: Self::NodeId) -> usize {
-        self.neighbors_undirected(node).count()
+        self.neighbors_undirected(node)
+            .map(|n| if n == node { 2 } else { 1 })
+            .sum()
     }
 
     // Edges by direction
@@ -259,7 +272,12 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for StableGraph<N, E, Directed
     #[inline]
     fn incident_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
         self.edges_directed(node, Direction::Incoming)
-            .chain(self.edges_directed(node, Direction::Outgoing))
+            .chain(
+                self.edges_directed(node, Direction::Outgoing)
+                    .filter(move |old_edge_ref| {
+                        old_edge_ref.source() != node || old_edge_ref.target() != node
+                    }),
+            )
             .map(|old_edge_ref| EdgeRef::<'_, Self> {
                 id: old_edge_ref.id(),
                 source: old_edge_ref.source(),
@@ -296,7 +314,8 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for StableGraph<N, E, Directed
 
     #[inline]
     fn adjacencies(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
-        self.neighbors_undirected(node)
+        self.neighbors_directed(node, Direction::Incoming)
+            .chain(self.neighbors_directed(node, Direction::Outgoing))
     }
 
     // Edges between nodes
@@ -339,7 +358,10 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for StableGraph<N, E, Directed
         rhs: Self::NodeId,
     ) -> impl Iterator<Item = EdgeRef<'_, Self>> {
         self.edges_connecting(lhs, rhs)
-            .chain(self.edges_connecting(rhs, lhs))
+            .chain(
+                self.edges_connecting(rhs, lhs)
+                    .filter(move |edge| edge.source() != edge.target()),
+            )
             .map(|edge| EdgeRef::<'_, Self> {
                 id: edge.id(),
                 source: edge.source(),
@@ -432,16 +454,18 @@ impl<N, E, Ix: IndexType + Display> UndirectedGraph for StableGraph<N, E, Undire
             .map(|(id, data)| NodeRef::<'_, Self> { id, data })
     }
 
+    /// Mutable iterator over all nodes.
+    ///
+    /// Performance note: Due to restrictions in the API of
+    /// [`StableGraph`](petgraph_old::stable_graph::StableGraph) this is implemented by first
+    /// collecting the node ids into a Vec and then combining that with the mutable node weights
+    /// iterator. Therefore, this may be inefficient and/or use more memory than expected for large
+    /// graphs.
     fn nodes_mut(&mut self) -> impl Iterator<Item = NodeMut<'_, Self>> {
-        // This returns the correct NodeIndexes because node_weights_mut() guarantees the values
-        // to be in order and Graph uses gap-less NodeIndexes from 0 to n-1 where n is the number of
-        // nodes.
+        let node_ids = self.node_indices().collect::<Vec<_>>();
         self.node_weights_mut()
-            .enumerate()
-            .map(|(idx, data)| NodeMut::<'_, Self> {
-                id: NodeIndex::new(idx),
-                data,
-            })
+            .zip(node_ids)
+            .map(|(data, id)| NodeMut::<'_, Self> { id, data })
     }
 
     /// Nodes with degree 0 (no incident edges).
@@ -528,7 +552,9 @@ impl<N, E, Ix: IndexType + Display> UndirectedGraph for StableGraph<N, E, Undire
     // Degree
     #[inline]
     fn degree(&self, node: Self::NodeId) -> usize {
-        self.neighbors(node).count()
+        self.neighbors(node)
+            .map(|n| if n == node { 2 } else { 1 })
+            .sum()
     }
 
     // Incidence
@@ -607,17 +633,169 @@ impl<N, E, Ix: IndexType + Display> UndirectedGraph for StableGraph<N, E, Undire
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SourceOrTargetNotFound {
+    SourceNodeDoesNotExist,
+    TargetNodeDoesNotExist,
+}
+
+impl Display for SourceOrTargetNotFound {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::SourceNodeDoesNotExist => {
+                write!(f, "source node does not exist")
+            }
+            Self::TargetNodeDoesNotExist => {
+                write!(f, "target node does not exist")
+            }
+        }
+    }
+}
+
+impl core::error::Error for SourceOrTargetNotFound {}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NotFoundError<T> {
+    pub id: T,
+}
+
+impl<T> Display for NotFoundError<T>
+where
+    T: Display,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "id {} does not exist", self.id)
+    }
+}
+
+impl<T: Display + Debug> core::error::Error for NotFoundError<T> {}
+
+impl<N, E, Dir, Ix> EditableGraph for StableGraph<N, E, Dir, Ix>
+where
+    Dir: petgraph_old::EdgeType,
+    Ix: IndexType + Display,
+{
+    type AddEdgeError = SourceOrTargetNotFound;
+    type AddNodeError = Infallible;
+    type OwnedEdgeData = E;
+    type OwnedNodeData = N;
+    type RemoveEdgeError = NotFoundError<EdgeIndex<Ix>>;
+    type RemoveNodeError = NotFoundError<NodeIndex<Ix>>;
+
+    fn add_node(&mut self, data: Self::OwnedNodeData) -> Result<Self::NodeId, Self::AddNodeError> {
+        Ok(self.add_node(data))
+    }
+
+    fn add_edge(
+        &mut self,
+        source: Self::NodeId,
+        target: Self::NodeId,
+        data: Self::OwnedEdgeData,
+    ) -> Result<Self::EdgeId, Self::AddEdgeError> {
+        if !self.contains_node(source) {
+            return Err(SourceOrTargetNotFound::SourceNodeDoesNotExist);
+        }
+        if !self.contains_node(target) {
+            return Err(SourceOrTargetNotFound::TargetNodeDoesNotExist);
+        }
+        Ok(self.add_edge(source, target, data))
+    }
+
+    fn remove_node(
+        &mut self,
+        id: Self::NodeId,
+    ) -> Result<Self::OwnedNodeData, Self::RemoveNodeError> {
+        self.remove_node(id).ok_or(NotFoundError { id })
+    }
+
+    fn remove_edge(
+        &mut self,
+        id: Self::EdgeId,
+    ) -> Result<Self::OwnedEdgeData, Self::RemoveEdgeError> {
+        self.remove_edge(id).ok_or(NotFoundError { id })
+    }
+}
+
+impl<N, E, Dir, Ix> StorableGraph for StableGraph<N, E, Dir, Ix>
+where
+    Dir: petgraph_old::EdgeType,
+    Ix: IndexType + Display,
+{
+    type EdgeDataContainer<Data: Clone> = DefaultVec<Data>;
+    type EdgeVisitContainer = FixedBitSet;
+    type NodeDataContainer<Data: Clone> = DefaultVec<Data>;
+    type NodeVisitContainer = FixedBitSet;
+
+    fn node_visit_container(&self) -> Self::NodeVisitContainer {
+        FixedBitSet::with_capacity(self.node_bound())
+    }
+
+    fn node_data_container<Data: Clone>(
+        &self,
+        default_value: Data,
+    ) -> Self::NodeDataContainer<Data> {
+        DefaultVec::new_with_capacity(default_value, self.node_bound())
+    }
+
+    fn edge_visit_container(&self) -> Self::EdgeVisitContainer {
+        FixedBitSet::with_capacity(self.edge_bound())
+    }
+
+    fn edge_data_container<Data: Clone>(
+        &self,
+        default_value: Data,
+    ) -> Self::EdgeDataContainer<Data> {
+        DefaultVec::new_with_capacity(default_value, self.edge_bound())
+    }
+}
+
 #[cfg(test)]
 mod test {
 
-    // use super::{Directed, StableGraph, Undirected};
-    // use crate::{test_directed_graph, test_undirected_graph};
+    use super::{Directed, StableGraph, Undirected};
 
-    // test_directed_graph!(StableGraph::<(), (), Directed>::new,);
+    mod directed {
+        use super::*;
+        use crate::{
+            test_directed_editable_graph, test_directed_editable_graph_parallel_edges,
+            test_directed_editable_graph_self_loops, test_directed_graph,
+            test_directed_graph_parallel_edges, test_directed_graph_self_loops,
+            test_directed_storable_graph, test_directed_storable_graph_parallel_edges,
+            test_directed_storable_graph_self_loops,
+        };
+        test_directed_graph!(StableGraph::<(), (), Directed>::new,);
+        test_directed_graph_parallel_edges!(StableGraph::<(), (), Directed>::new,);
+        test_directed_graph_self_loops!(StableGraph::<(), (), Directed>::new,);
 
-    // fn new_undirected() -> StableGraph<(), (), Undirected> {
-    //     StableGraph::with_capacity(0, 0)
-    // }
+        test_directed_editable_graph!(StableGraph::<(), (), Directed>::new,);
+        test_directed_editable_graph_parallel_edges!(StableGraph::<(), (), Directed>::new,);
+        test_directed_editable_graph_self_loops!(StableGraph::<(), (), Directed>::new,);
 
-    // test_undirected_graph!(new_undirected,);
+        test_directed_storable_graph!(StableGraph::<(), (), Directed>::new,);
+        test_directed_storable_graph_parallel_edges!(StableGraph::<(), (), Directed>::new,);
+        test_directed_storable_graph_self_loops!(StableGraph::<(), (), Directed>::new,);
+    }
+
+    mod undirected {
+        use super::*;
+        use crate::{
+            test_undirected_editable_graph, test_undirected_editable_graph_parallel_edges,
+            test_undirected_editable_graph_self_loops, test_undirected_graph,
+            test_undirected_graph_parallel_edges, test_undirected_graph_self_loops,
+            test_undirected_storable_graph, test_undirected_storable_graph_parallel_edges,
+            test_undirected_storable_graph_self_loops,
+        };
+
+        test_undirected_graph!(StableGraph::<(), (), Undirected>::default,);
+        test_undirected_graph_parallel_edges!(StableGraph::<(), (), Undirected>::default,);
+        test_undirected_graph_self_loops!(StableGraph::<(), (), Undirected>::default,);
+
+        test_undirected_editable_graph!(StableGraph::<(), (), Undirected>::default,);
+        test_undirected_editable_graph_parallel_edges!(StableGraph::<(), (), Undirected>::default,);
+        test_undirected_editable_graph_self_loops!(StableGraph::<(), (), Undirected>::default,);
+
+        test_undirected_storable_graph!(StableGraph::<(), (), Undirected>::default,);
+        test_undirected_storable_graph_parallel_edges!(StableGraph::<(), (), Undirected>::default,);
+        test_undirected_storable_graph_self_loops!(StableGraph::<(), (), Undirected>::default,);
+    }
 }
