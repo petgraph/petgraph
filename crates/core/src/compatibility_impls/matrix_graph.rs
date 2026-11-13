@@ -751,78 +751,16 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
 
 #[cfg(test)]
 mod test {
-    use petgraph_old::matrix_graph::{DiMatrix, MatrixGraph, NodeIndex, UnMatrix};
+    use petgraph_old::matrix_graph::{MatrixGraph, UnMatrix};
 
-    use super::{DirMatrixGraphEdgeId, UndirMatrixGraphEdgeId, Undirected};
+    use super::Undirected;
     use crate::{test_directed_graph, test_undirected_graph};
 
-    mod directed {
-        use super::*;
+    test_directed_graph!(MatrixGraph::<(), ()>::new,);
 
-        fn remove_node_with_unwrap_dir(graph: &mut DiMatrix<(), ()>, node_id: NodeIndex) {
-            graph.remove_node(node_id);
-        }
-
-        fn add_edge_with_unwrap_dir(
-            graph: &mut MatrixGraph<(), ()>,
-            source: NodeIndex,
-            target: NodeIndex,
-            _data: (),
-        ) -> DirMatrixGraphEdgeId<u16> {
-            graph.add_edge(source, target, ());
-            DirMatrixGraphEdgeId::new(source, target)
-        }
-
-        fn remove_edge_with_unwrap_dir(
-            graph: &mut MatrixGraph<(), ()>,
-            edge_id: DirMatrixGraphEdgeId<u16>,
-        ) {
-            graph.remove_edge(edge_id.source, edge_id.target);
-        }
-
-        test_directed_graph!(
-            MatrixGraph::<(), ()>::new,
-            MatrixGraph::<(), ()>::add_node,
-            remove_node_with_unwrap_dir,
-            add_edge_with_unwrap_dir,
-            remove_edge_with_unwrap_dir
-        );
+    fn new_undir() -> UnMatrix<(), ()> {
+        MatrixGraph::<(), (), _, Undirected>::with_capacity(0)
     }
 
-    mod undirected {
-        use super::*;
-
-        fn new_undir() -> UnMatrix<(), ()> {
-            MatrixGraph::<(), (), _, Undirected>::with_capacity(0)
-        }
-
-        fn remove_node_with_unwrap_undir(graph: &mut UnMatrix<(), ()>, node_id: NodeIndex) {
-            graph.remove_node(node_id);
-        }
-
-        fn add_edge_with_unwrap_undir(
-            graph: &mut UnMatrix<(), ()>,
-            source: NodeIndex,
-            target: NodeIndex,
-            _data: (),
-        ) -> UndirMatrixGraphEdgeId<u16> {
-            graph.add_edge(source, target, ());
-            UndirMatrixGraphEdgeId::new(source, target)
-        }
-
-        fn remove_edge_with_unwrap_undir(
-            graph: &mut UnMatrix<(), ()>,
-            edge_id: UndirMatrixGraphEdgeId<u16>,
-        ) {
-            graph.remove_edge(edge_id.source, edge_id.target);
-        }
-
-        test_undirected_graph!(
-            new_undir,
-            MatrixGraph::<(), (), _, Undirected>::add_node,
-            remove_node_with_unwrap_undir,
-            add_edge_with_unwrap_undir,
-            remove_edge_with_unwrap_undir
-        );
-    }
+    test_undirected_graph!(new_undir,);
 }

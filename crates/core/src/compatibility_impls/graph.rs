@@ -1,5 +1,8 @@
 use alloc::vec::Vec;
-use core::fmt::Display;
+use core::{
+    convert::Infallible,
+    fmt::{self, Debug, Display},
+};
 
 use petgraph_old::{
     Directed, Direction, Undirected,
@@ -10,7 +13,9 @@ use petgraph_old::{
 
 use crate::{
     edge::{EdgeMut, EdgeRef},
-    graph::{Cardinality, DensityHint, DirectedGraph, Graph as NewGraph, UndirectedGraph},
+    graph::{
+        Cardinality, DensityHint, DirectedGraph, EditableGraph, Graph as NewGraph, UndirectedGraph,
+    },
     id::Id,
     node::{NodeMut, NodeRef},
 };
@@ -45,6 +50,89 @@ impl<N, E, Ty, Ix: IndexType + Display> NewGraph for OldGraph<N, E, Ty, Ix> {
     where
         Self: 'graph;
     type NodeId = NodeIndex<Ix>;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SourceOrTargetNotFound {
+    SourceNodeDoesNotExist,
+    TargetNodeDoesNotExist,
+}
+
+impl Display for SourceOrTargetNotFound {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            SourceOrTargetNotFound::SourceNodeDoesNotExist => {
+                write!(f, "source node does not exist")
+            }
+            SourceOrTargetNotFound::TargetNodeDoesNotExist => {
+                write!(f, "target node does not exist")
+            }
+        }
+    }
+}
+
+impl core::error::Error for SourceOrTargetNotFound {}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NotFoundError<T> {
+    pub id: T,
+}
+
+impl<T> Display for NotFoundError<T>
+where
+    T: Display,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "id {} does not exist", self.id)
+    }
+}
+
+impl<T: Display + Debug> core::error::Error for NotFoundError<T> {}
+
+impl<N, E, Dir, Ix> EditableGraph for OldGraph<N, E, Dir, Ix>
+where
+    Dir: petgraph_old::EdgeType,
+    Ix: IndexType + Display,
+{
+    type AddEdgeError = SourceOrTargetNotFound;
+    type AddNodeError = Infallible;
+    type OwnedEdgeData = E;
+    type OwnedNodeData = N;
+    type RemoveEdgeError = NotFoundError<EdgeIndex<Ix>>;
+    type RemoveNodeError = NotFoundError<NodeIndex<Ix>>;
+
+    fn add_node(&mut self, data: Self::OwnedNodeData) -> Result<Self::NodeId, Self::AddNodeError> {
+        Ok(self.add_node(data))
+    }
+
+    fn add_edge(
+        &mut self,
+        source: Self::NodeId,
+        target: Self::NodeId,
+        data: Self::OwnedEdgeData,
+    ) -> Result<Self::EdgeId, Self::AddEdgeError> {
+        if self.node_weight(source).is_none() {
+            return Err(SourceOrTargetNotFound::SourceNodeDoesNotExist);
+        }
+        if self.node_weight(target).is_none() {
+            return Err(SourceOrTargetNotFound::TargetNodeDoesNotExist);
+        }
+        Ok(self.add_edge(source, target, data))
+    }
+
+    fn remove_node(
+        &mut self,
+        id: Self::NodeId,
+    ) -> Result<Self::OwnedNodeData, Self::RemoveNodeError> {
+        self.remove_node(id).ok_or(NotFoundError { id })
+    }
+
+    fn remove_edge(
+        &mut self,
+        id: Self::EdgeId,
+    ) -> Result<Self::OwnedEdgeData, Self::RemoveEdgeError> {
+        self.remove_edge(id).ok_or(NotFoundError { id })
+    }
 }
 
 impl<N, E, Ix: IndexType + Display> DirectedGraph for OldGraph<N, E, Directed, Ix> {
@@ -593,46 +681,11 @@ impl<N, E, Ix: IndexType + Display> UndirectedGraph for OldGraph<N, E, Undirecte
 
 #[cfg(test)]
 mod test {
-    use petgraph_old::EdgeType;
 
-    use super::{Directed, EdgeIndex, NodeIndex, OldGraph, Undirected};
+    use super::{Directed, OldGraph, Undirected};
     use crate::{test_directed_graph, test_undirected_graph};
 
-    fn remove_node_with_unwrap<Dir: EdgeType>(
-        graph: &mut OldGraph<(), (), Dir>,
-        node_id: NodeIndex,
-    ) {
-        graph.remove_node(node_id).unwrap();
-    }
+    test_directed_graph!(OldGraph::<(), (), Directed>::new,);
 
-    fn remove_edge_with_unwrap<Dir: EdgeType>(
-        graph: &mut OldGraph<(), (), Dir>,
-        edge_id: EdgeIndex,
-    ) {
-        graph.remove_edge(edge_id).unwrap();
-    }
-
-    mod directed {
-        use super::*;
-
-        test_directed_graph!(
-            OldGraph::<(), (), Directed>::new,
-            OldGraph::<(), (), Directed>::add_node,
-            remove_node_with_unwrap,
-            OldGraph::<(), (), Directed>::add_edge,
-            remove_edge_with_unwrap
-        );
-    }
-
-    mod undirected {
-        use super::*;
-
-        test_undirected_graph!(
-            OldGraph::<(), (), Undirected>::new_undirected,
-            OldGraph::<(), (), Undirected>::add_node,
-            remove_node_with_unwrap,
-            OldGraph::<(), (), Undirected>::add_edge,
-            remove_edge_with_unwrap
-        );
-    }
+    test_undirected_graph!(OldGraph::<(), (), Undirected>::new_undirected,);
 }
