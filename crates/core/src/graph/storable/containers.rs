@@ -28,8 +28,8 @@ impl<Id: IndexId> VisitContainer<Id> for FixedBitSet {
 }
 
 pub struct DefaultVec<Data> {
-    vec: Vec<Data>,
-    default: Data,
+    pub vec: Vec<Data>,
+    pub default: Data,
 }
 
 impl<Data: Clone> DefaultVec<Data> {
@@ -147,8 +147,8 @@ impl<Data> QueueContainer<Data> for VecDeque<Data> {
 
 #[cfg(feature = "std")]
 pub struct DefaultHashMapStd<Id, Data, S = std::hash::RandomState> {
-    map: StdHashMap<Id, Data, S>,
-    default: Data,
+    pub map: StdHashMap<Id, Data, S>,
+    pub default: Data,
 }
 
 #[cfg(feature = "std")]
@@ -201,8 +201,8 @@ impl<Id: core::hash::Hash + core::cmp::Eq, S: core::hash::BuildHasher> VisitCont
 
 #[cfg(feature = "hashbrown")]
 pub struct DefaultHashMapHashbrown<Id, Data, S = hashbrown::DefaultHashBuilder> {
-    map: HashbrownHashMap<Id, Data, S>,
-    default: Data,
+    pub map: HashbrownHashMap<Id, Data, S>,
+    pub default: Data,
 }
 
 #[cfg(feature = "hashbrown")]

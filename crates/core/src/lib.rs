@@ -7,6 +7,8 @@ extern crate std;
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
+#[cfg(feature = "alloc")]
+pub mod compatibility_impls;
 pub mod edge;
 pub mod graph;
 pub mod id;
