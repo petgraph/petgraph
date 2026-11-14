@@ -70,11 +70,13 @@ pub trait DirectedGraph: Graph {
     }
 
     // Degree
+    // Counts self-loops once
     #[inline]
     fn in_degree(&self, node: Self::NodeId) -> usize {
         self.incoming_edges(node).count()
     }
 
+    // Counts self-loops once
     #[inline]
     fn out_degree(&self, node: Self::NodeId) -> usize {
         self.outgoing_edges(node).count()
@@ -113,12 +115,14 @@ pub trait DirectedGraph: Graph {
         self.edges_mut().filter(move |edge| edge.source == node)
     }
 
+    // Counts self-loops once
     #[inline]
     fn incident_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
         self.edges()
             .filter(move |edge| edge.source == node || edge.target == node)
     }
 
+    // Counts self-loops once
     #[inline]
     fn incident_edges_mut(
         &mut self,
@@ -139,12 +143,18 @@ pub trait DirectedGraph: Graph {
         self.outgoing_edges(node).map(|edge| edge.target)
     }
 
+    // Counts self-loops once
+    // Counts parallel edges once
     #[inline]
     fn adjacencies(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
-        self.predecessors(node).chain(self.successors(node))
+        self.predecessors(node).chain(
+            self.successors(node)
+                .filter(move |&successor| successor != node),
+        )
     }
 
     // Edges between nodes
+    // Counts self-loops once
     #[inline]
     fn edges_between(
         &self,
@@ -155,6 +165,7 @@ pub trait DirectedGraph: Graph {
             .filter(move |edge| edge.source == source && edge.target == target)
     }
 
+    // Counts self-loops once
     #[inline]
     fn edges_between_mut(
         &mut self,
@@ -165,6 +176,7 @@ pub trait DirectedGraph: Graph {
             .filter(move |edge| edge.source == source && edge.target == target)
     }
 
+    // Counts self-loops once
     #[inline]
     fn edges_connecting(
         &self,
@@ -176,6 +188,7 @@ pub trait DirectedGraph: Graph {
         })
     }
 
+    // Counts self-loops once
     #[inline]
     fn edges_connecting_mut(
         &mut self,
