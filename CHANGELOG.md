@@ -3,6 +3,35 @@
 All notable changes to this project will be documented in this file.
 
 
+## [0.8.4](https://github.com/petgraph/petgraph/compare/petgraph@v0.8.3...petgraph@v0.8.4) - 2026-11-14
+
+### Bug Fixes
+
+- correct undirected edge count in Generator::all without self-loops ([#1012](https://github.com/petgraph/petgraph/pull/1012))
+- Adjust edge count correctly in `MatrixGraph::remove_node` ([#1017](https://github.com/petgraph/petgraph/pull/1017))
+- return zero flow when dinics source equals destination ([#1016](https://github.com/petgraph/petgraph/pull/1016))
+- MatrixGraph::has_node properly checks bound for NodeIndex ([#1020](https://github.com/petgraph/petgraph/pull/1020))
+- Size max flow scratch vectors by index bound ([#1034](https://github.com/petgraph/petgraph/pull/1034))
+- return zero cost from bidirectional_dijkstra when start equals goal ([#1082](https://github.com/petgraph/petgraph/pull/1082))
+- Use `node_bound` instead of `node_count` in algorithms ([#1083](https://github.com/petgraph/petgraph/pull/1083))
+- restore free edge after failed stable graph insertion ([#1047](https://github.com/petgraph/petgraph/pull/1047))
+
+### Documentation
+
+- Adjust edges_directed docs to reflect properly document behavior. ([#1014](https://github.com/petgraph/petgraph/pull/1014))
+- fix typo in doc comment ([#995](https://github.com/petgraph/petgraph/pull/995))
+
+### New Features
+
+- Add Display Implementation for NodeIndex<Ix> and EdgeIndex<Ix> whenever Ix: Display. ([#941](https://github.com/petgraph/petgraph/pull/941))
+- Expose mutable Edge Weight iterators for MatrixGraph ([#946](https://github.com/petgraph/petgraph/pull/946))
+- add node_weights_mut, edge_weights_mut to Acyclic and Frozen ([#1044](https://github.com/petgraph/petgraph/pull/1044))
+- add `Acyclic::as_frozen` view ([#1060](https://github.com/petgraph/petgraph/pull/1060))
+
+### Performance
+
+- Kruskal's iterator creation 2x faster via O(E) bottom-up heapify ([#984](https://github.com/petgraph/petgraph/pull/984))
+
 ## [0.8.3](https://github.com/petgraph/petgraph/compare/petgraph@v0.8.2...petgraph@v0.8.3) - 2025-09-30
 
 ### Bug Fixes
