@@ -13,8 +13,8 @@ use petgraph_core::{
 };
 
 use crate::{
-    MatrixGraph, MatrixGraphEdgeDataContainer, MatrixGraphExtras, MatrixGraphNodeId,
-    MatrixGraphVisitMap, NicheWrapper, Undirected, private::Sealed,
+    __private::Sealed, MatrixGraph, MatrixGraphCommon, MatrixGraphEdgeDataContainer,
+    MatrixGraphNodeId, MatrixGraphVisitMap, NicheWrapper, Undirected,
 };
 
 /// A [`MatrixGraph`] with undirected edges.
@@ -66,7 +66,7 @@ impl Id for UnMatrixEdgeId {}
 
 impl<N, E, Null: NicheWrapper<Wrapped = E>> Sealed for UnMatrixGraph<N, E, Null> {}
 
-impl<N, E, Null: NicheWrapper<Wrapped = E>> MatrixGraphExtras<N> for UnMatrixGraph<N, E, Null> {
+impl<N, E, Null: NicheWrapper<Wrapped = E>> MatrixGraphCommon<N> for UnMatrixGraph<N, E, Null> {
     #[inline]
     fn to_edge_position(
         &self,
