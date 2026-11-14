@@ -18,7 +18,7 @@ all-features = true
 
 [dependencies]
 petgraph-core = { workspace = true }
-petgraph-old  = { workspace = true, optional = true }
+petgraph-old  = { workspace = true, optional = true, features = ["matrix_graph", "stable_graph", "graphmap"]}
 
 [dev-dependencies]
 
