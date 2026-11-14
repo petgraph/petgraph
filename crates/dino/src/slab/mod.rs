@@ -29,7 +29,6 @@ impl<K, V> Slab<K, V>
 where
     K: Key,
 {
-    #[cfg(test)]
     pub(crate) fn new() -> Self {
         Self::with_capacity(None)
     }

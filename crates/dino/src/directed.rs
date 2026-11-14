@@ -156,7 +156,10 @@ impl<N, E> DirectedGraph for DinoGraph<N, E, Directed> {
 
     #[inline]
     fn outgoing_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
-        self.nodes.get(node).map(|n| n.closures.outgoing_edges())
+        self.nodes
+            .get(node)
+            .map(|n| n.closures.outgoing_edges())
+            .into_iter()
     }
 
     #[inline]

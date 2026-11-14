@@ -122,19 +122,13 @@ mod tests;
 
 use core::fmt::{Debug, Display};
 
-use either::Either;
-use error_stack::{Report, Result};
-use petgraph_core::{
-    edge::EdgeMut,
-    graph::{Directed, Graph, Undirected},
-    id::Id,
-    node::NodeMut,
-};
+use petgraph_core::graph::{Directed, Graph, Undirected};
 
 use crate::{
+    __private::DinoGraphCommon,
     closure::Closures,
     edge::{DinoEdgeId, Edge},
-    node::{DinoNodeId, Node, NodeClosures, NodeSlab},
+    node::{DinoNodeId, Node, NodeSlab},
     slab::Slab,
 };
 
@@ -348,7 +342,11 @@ impl<N, E, D> DinoGraph<N, E, D> {
     /// ```
     #[must_use]
     pub fn new() -> Self {
-        Self::with_capacity(None, None)
+        Self {
+            nodes: Slab::new(),
+            edges: Slab::new(),
+            directionality: core::marker::PhantomData,
+        }
     }
 }
 
@@ -428,6 +426,12 @@ impl<N, E, D> Graph for DinoGraph<N, E, D> {
     type NodeId = DinoNodeId;
 }
 
+mod __private {
+    pub trait DinoGraphCommon {
+        fn is_directed() -> bool;
+    }
+}
+
 fn edges_between_undirected<N>(
     nodes: &NodeSlab<N>,
     source: DinoNodeId,
@@ -442,8 +446,11 @@ fn edges_between_undirected<N>(
         .flat_map(|(source, target)| source.closures.edges_between_undirected(&target.closures))
 }
 
-impl<N, E, D> DinoGraph<N, E, D> {
-    fn insert_node(&mut self, id: DinoNodeId, weight: N) -> Result<NodeMut<Self>, DinoError> {
+impl<N, E, D> DinoGraph<N, E, D>
+where
+    Self: DinoGraphCommon,
+{
+    fn insert_node(&mut self, id: DinoNodeId, weight: N) -> Result<DinoNodeId, DinoError> {
         let expected = id;
         let id = self.nodes.insert(Node::new(expected, weight));
 
@@ -452,17 +459,17 @@ impl<N, E, D> DinoGraph<N, E, D> {
             // we don't need to update the closures, since we haven't added the node to them yet
             self.nodes.remove(id);
 
-            return Err(Report::new(DinoError::InconsistentNodeId));
+            return Err(DinoError::InconsistentNodeId);
         }
 
         let node = self
             .nodes
             .get_mut(id)
-            .ok_or_else(|| Report::new(DinoError::NodeNotFound))?;
+            .ok_or_else(|| DinoError::NodeNotFound)?;
 
         // we do not need to set the node's id, since the assertion above guarantees that the id is
         // correct
-        Ok(NodeMut::new(node.id, &mut node.weight))
+        Ok(node.id)
     }
 
     fn next_edge_id(&self) -> DinoEdgeId {
@@ -475,12 +482,12 @@ impl<N, E, D> DinoGraph<N, E, D> {
         weight: E,
         source: DinoNodeId,
         target: DinoNodeId,
-    ) -> Result<EdgeMut<Self>, DinoError> {
+    ) -> Result<DinoEdgeId, DinoError> {
         // TODO: option to disallow self-loops and parallel edges
 
         // undirected edges in the graph are stored in a canonical form, where the source node id is
         // always smaller than the target node id
-        let (source, target) = if D::is_directed() {
+        let (source, target) = if Self::is_directed() {
             (source, target)
         } else if source > target {
             (target, source)
@@ -498,24 +505,19 @@ impl<N, E, D> DinoGraph<N, E, D> {
             // we don't need to update the closures, since we haven't added the edge to them yet
             self.edges.remove(id);
 
-            return Err(Report::new(DinoError::InconsistentEdgeId));
+            return Err(DinoError::InconsistentEdgeId);
         }
 
         let edge = self
             .edges
             .get_mut(id)
-            .ok_or_else(|| Report::new(DinoError::EdgeNotFound))?;
+            .ok_or_else(|| DinoError::EdgeNotFound)?;
         // we do not need to set the node's id, since the assertion above guarantees that the id is
         // correct
 
         Closures::create_edge(edge, &mut self.nodes);
 
-        Ok(EdgeMut::new(
-            edge.id,
-            &mut edge.weight,
-            edge.source,
-            edge.target,
-        ))
+        Ok(edge.id)
     }
 
     fn remove_node(&mut self, id: DinoNodeId) -> Option<N> {
@@ -527,7 +529,7 @@ impl<N, E, D> DinoGraph<N, E, D> {
             }
         }
 
-        let (id, weight) = Closures::remove_node(node, &mut self.nodes);
+        let (_, weight) = Closures::remove_node(node, &mut self.nodes);
 
         Some(weight)
     }
