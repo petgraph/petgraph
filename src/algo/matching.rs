@@ -6,6 +6,9 @@ use crate::visit::{
     VisitMap, Visitable,
 };
 
+mod weighted;
+pub use weighted::maximum_weight_matching;
+
 /// Computed
 /// [*matching*](https://en.wikipedia.org/wiki/Matching_(graph_theory)#Definitions)
 /// of the graph.
