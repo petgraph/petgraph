@@ -31,3 +31,4 @@ ci: fmt clippy test
 # Checks if no-std is working same as in CI. Requires the wasm32v1-none target to be installed
 check-no-std:
     cargo check --no-default-features -p petgraph@0.9.0 --target wasm32v1-none
+    cargo check -p petgraph-matrix-graph --target wasm32v1-none
