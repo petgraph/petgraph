@@ -1371,7 +1371,7 @@ fn extend_flat_square_matrix<T: Default>(
             }
         } else {
             for i in (0..old_node_capacity).rev() {
-                node_adjacencies.as_mut_slice().swap(pos + i, new_pos + i);
+                node_adjacencies.swap(pos + i, new_pos + i);
             }
         }
     }
