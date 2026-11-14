@@ -3,7 +3,7 @@
 name = "petgraph"
 version = "0.8.3"
 readme = "README.md"
-license = "MIT OR Apache-2.0"
+license = "(MIT OR Apache-2.0) AND BSD-3-Clause"
 authors = { workspace = true }
 
 description = "Graph data structure library. Provides graph types and graph algorithms."
