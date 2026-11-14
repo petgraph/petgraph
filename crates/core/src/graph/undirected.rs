@@ -78,12 +78,14 @@ pub trait UndirectedGraph: Graph {
     }
 
     // Incidence
+    // Counts self-loops once
     #[inline]
     fn incident_edges(&self, node: Self::NodeId) -> impl Iterator<Item = EdgeRef<'_, Self>> {
         self.edges()
             .filter(move |edge| edge.source == node || edge.target == node)
     }
 
+    // Counts self-loops once
     #[inline]
     fn incident_edges_mut(
         &mut self,
@@ -94,6 +96,8 @@ pub trait UndirectedGraph: Graph {
     }
 
     // Adjacency
+    // Counts self-loops once
+    // Counts parallel edges once
     #[inline]
     fn adjacencies(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
         self.incident_edges(node).map(move |edge| {
@@ -106,6 +110,7 @@ pub trait UndirectedGraph: Graph {
     }
 
     // Edges between nodes
+    // Counts self-loops once
     #[inline]
     fn edges_connecting(
         &self,
@@ -117,6 +122,7 @@ pub trait UndirectedGraph: Graph {
         })
     }
 
+    // Counts self-loops once
     #[inline]
     fn edges_connecting_mut(
         &mut self,

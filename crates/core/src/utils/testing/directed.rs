@@ -914,7 +914,7 @@ pub mod __private_testing {
                 (target == node_number).then_some(source)
             });
             let expected_successors = test_graph.expected_neighbors(&nodes, |source, target| {
-                (source == node_number).then_some(target)
+                (source == node_number && target != node_number).then_some(target)
             });
             check_if_nodes_match(
                 expected_predecessors.chain(expected_successors),
