@@ -13,8 +13,8 @@ use petgraph_core::{
 };
 
 use crate::{
-    Directed, Either, MatrixGraph, MatrixGraphCommon, MatrixGraphEdgeDataContainer,
-    MatrixGraphNodeId, MatrixGraphVisitMap, NicheWrapper, __private::Sealed,
+    __private::Sealed, Directed, Either, MatrixGraph, MatrixGraphCommon,
+    MatrixGraphEdgeDataContainer, MatrixGraphNodeId, MatrixGraphVisitMap, NicheWrapper,
 };
 
 /// A [`MatrixGraph`] with directed edges.
