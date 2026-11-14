@@ -20,7 +20,7 @@ fmt:
 
 # Clippy with the same configuration as in CI
 clippy:
-    cargo clippy --all-features --lib --bins --examples --tests -- -D warnings
+    cargo clippy --all-features --lib --bins --examples --tests --benches -- -D warnings
 
 # Runs all linting checks that are run in CI
 lint: fmt clippy

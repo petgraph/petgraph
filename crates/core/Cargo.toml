@@ -16,8 +16,8 @@ hashbrown   = { workspace = true, optional = true }
 
 [features]
 default   = ["std"]
-std       = ["alloc"]
 alloc     = []
+std       = ["alloc"]
 hashbrown = ["dep:hashbrown"]
 
 # For testing
