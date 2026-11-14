@@ -20,6 +20,8 @@ extern crate alloc;
 extern crate std;
 
 pub use petgraph_core as core;
+#[cfg(feature = "petgraph-matrix-graph")]
+pub use petgraph_matrix_graph as matrix_graph;
 #[cfg(feature = "petgraph-old")]
 pub use petgraph_old;
 
