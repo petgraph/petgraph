@@ -15,12 +15,12 @@ use core::{
     marker::PhantomData,
 };
 
+pub(crate) use __private::MatrixGraphCommon;
 use fixedbitset::FixedBitSet;
 use petgraph_core::{
     graph::{Directed, EditableGraph, Graph, Undirected},
     id::{Id, IndexId},
 };
-pub(crate) use private::MatrixGraphExtras;
 use slab::Slab;
 
 mod directed;
@@ -88,7 +88,10 @@ impl IndexId for MatrixGraphNodeId {
     }
 }
 
-mod private {
+// WARNING: This module contains only internal testing helper functions and should not be considered
+// part of the public API. It is subject to change at any time.
+#[doc(hidden)]
+mod __private {
     use petgraph_core::graph::Graph;
 
     use crate::MatrixGraphNodeId;
@@ -100,7 +103,7 @@ mod private {
 
     /// Internal trait for extra methods for directed and undirected [`MatrixGraph`]s, to simplify
     /// their implementations.
-    pub trait MatrixGraphExtras<N>: Sealed + Graph {
+    pub trait MatrixGraphCommon<N>: Sealed + Graph {
         /// Return the position of the edge from `node_a` to `node_b` in the flattened adjacency
         /// matrix.
         ///
@@ -153,7 +156,7 @@ mod private {
 ///
 /// Note: this trait is currently *sealed* and cannot be implemented for types outside this crate.
 pub trait NicheWrapper:
-    Default + Into<Option<<Self as NicheWrapper>::Wrapped>> + private::Sealed
+    Default + Into<Option<<Self as NicheWrapper>::Wrapped>> + __private::Sealed
 {
     #[doc(hidden)]
     type Wrapped;
@@ -309,7 +312,7 @@ impl<N, E, Dir, Null: NicheWrapper<Wrapped = E>> MatrixGraph<N, E, Dir, Null> {
 
 impl<N, E, Dir, Null: NicheWrapper<Wrapped = E>> MatrixGraph<N, E, Dir, Null>
 where
-    Self: MatrixGraphExtras<N>,
+    Self: MatrixGraphCommon<N>,
 {
     /// Create a new `MatrixGraph` with capacity sufficient to hold the specified number of nodes
     /// (and any edges between them) without resizing.
@@ -347,7 +350,7 @@ where
 
 impl<N, E, Dir, Null: NicheWrapper<Wrapped = E>> Default for MatrixGraph<N, E, Dir, Null>
 where
-    Self: MatrixGraphExtras<N>,
+    Self: MatrixGraphCommon<N>,
 {
     fn default() -> Self {
         Self::with_capacity(0)
@@ -391,7 +394,7 @@ pub struct MatrixGraphEdgeDataContainer<EdgeId, Data> {
 
 impl<N, E, Dir, Null: NicheWrapper<Wrapped = E>> EditableGraph for MatrixGraph<N, E, Dir, Null>
 where
-    Self: Graph<NodeId = MatrixGraphNodeId> + MatrixGraphExtras<N>,
+    Self: Graph<NodeId = MatrixGraphNodeId> + MatrixGraphCommon<N>,
 {
     type AddEdgeError = AddEdgeError;
     type AddNodeError = Infallible;
@@ -426,7 +429,7 @@ where
         } else {
             return Err(AddEdgeError::EdgeAlreadyExists(source, target));
         }
-        Ok(<Self as MatrixGraphExtras<N>>::edge_id_from_source_target(
+        Ok(<Self as MatrixGraphCommon<N>>::edge_id_from_source_target(
             source, target,
         ))
     }
@@ -437,8 +440,8 @@ where
     ) -> Result<Self::OwnedEdgeData, Self::RemoveEdgeError> {
         let position = self
             .to_edge_position(
-                <Self as MatrixGraphExtras<N>>::edge_id_to_source(id),
-                <Self as MatrixGraphExtras<N>>::edge_id_to_target(id),
+                <Self as MatrixGraphCommon<N>>::edge_id_to_source(id),
+                <Self as MatrixGraphCommon<N>>::edge_id_to_target(id),
             )
             .ok_or(RemoveEdgeError::EdgeDoesNotExist(id))?;
         let old_data = core::mem::take(&mut self.flattened_edge_data[position]).into();

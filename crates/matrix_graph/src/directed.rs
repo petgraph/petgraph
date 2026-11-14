@@ -13,8 +13,8 @@ use petgraph_core::{
 };
 
 use crate::{
-    Directed, Either, MatrixGraph, MatrixGraphEdgeDataContainer, MatrixGraphExtras,
-    MatrixGraphNodeId, MatrixGraphVisitMap, NicheWrapper, private::Sealed,
+    Directed, Either, MatrixGraph, MatrixGraphCommon, MatrixGraphEdgeDataContainer,
+    MatrixGraphNodeId, MatrixGraphVisitMap, NicheWrapper, __private::Sealed,
 };
 
 /// A [`MatrixGraph`] with directed edges.
@@ -49,7 +49,7 @@ impl Id for DiMatrixEdgeId {}
 
 impl<N, E, Null: NicheWrapper<Wrapped = E>> Sealed for DiMatrixGraph<N, E, Null> {}
 
-impl<N, E, Null: NicheWrapper<Wrapped = E>> MatrixGraphExtras<N> for DiMatrixGraph<N, E, Null> {
+impl<N, E, Null: NicheWrapper<Wrapped = E>> MatrixGraphCommon<N> for DiMatrixGraph<N, E, Null> {
     #[inline]
     fn to_edge_position(
         &self,
