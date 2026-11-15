@@ -13,6 +13,7 @@ publish = false
 fixedbitset = { workspace = true }
 foldhash    = { workspace = true, optional = true }
 hashbrown   = { workspace = true, optional = true }
+petgraph-old = { workspace = true }
 
 [features]
 default   = ["std"]
