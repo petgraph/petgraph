@@ -314,8 +314,10 @@ impl<N, E, Ix: IndexType + Display> DirectedGraph for StableGraph<N, E, Directed
 
     #[inline]
     fn adjacencies(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
-        self.neighbors_directed(node, Direction::Incoming)
-            .chain(self.neighbors_directed(node, Direction::Outgoing))
+        self.neighbors_directed(node, Direction::Incoming).chain(
+            self.neighbors_directed(node, Direction::Outgoing)
+                .filter(move |&n| n != node),
+        )
     }
 
     // Edges between nodes

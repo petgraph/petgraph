@@ -377,7 +377,10 @@ impl<N, E, S: BuildHasher, Null: Nullable<Wrapped = E>, Ix: IndexType + Display>
     #[inline]
     fn adjacencies(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
         self.edges_directed(node, Direction::Incoming)
-            .chain(self.edges_directed(node, Direction::Outgoing))
+            .chain(
+                self.edges_directed(node, Direction::Outgoing)
+                    .filter(move |(source, target, _data)| *source != node || *target != node),
+            )
             .map(|(_source, target, _data)| target)
     }
 
