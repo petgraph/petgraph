@@ -217,7 +217,7 @@ where
     let reweight = johnson_reweight(graph, &mut edge_cost)?;
     let reweight = reweight.as_slice();
 
-    let node_bound = graph.node_bound();
+    let nodes: Vec<_> = graph.node_identifiers().collect();
     let ix = |i| graph.to_index(i);
 
     // Reweight edges.
@@ -228,11 +228,9 @@ where
     };
 
     // Run Dijkstra's algorithm from each node.
-    let distance_map = (0..node_bound)
+    let distance_map = nodes
         .into_par_iter()
-        .flat_map_iter(|s| {
-            let source = graph.from_index(s);
-
+        .flat_map_iter(|source| {
             dijkstra(graph, source, None, new_cost)
                 .into_iter()
                 .map(move |(target, dist)| {

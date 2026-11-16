@@ -266,6 +266,80 @@ fn johnson_multiple_edges() {
     }
 }
 
+#[cfg(feature = "stable_graph")]
+fn check_stable_graph(removed: &[usize], refill: bool) {
+    let mut graph = petgraph::stable_graph::StableDiGraph::<(), i32>::new();
+    let nodes: Vec<_> = (0..6).map(|_| graph.add_node(())).collect();
+    for &index in removed {
+        graph.remove_node(nodes[index]);
+    }
+    if refill {
+        for _ in removed {
+            graph.add_node(());
+        }
+    }
+
+    let nodes: Vec<_> = graph.node_indices().collect();
+    let [a, b, c] = [nodes[0], nodes[1], nodes[2]];
+    graph.extend_with_edges([(a, b, 2), (b, c, -5), (a, c, 7)]);
+    let mut expected: HashMap<_, _> = nodes.iter().map(|&node| ((node, node), 0)).collect();
+    expected.extend([((a, b), 2), ((b, c), -5), ((a, c), -3)]);
+
+    assert_eq!(johnson(&graph, |edge| *edge.weight()).unwrap(), expected);
+    #[cfg(feature = "rayon")]
+    assert_eq!(
+        parallel_johnson(&graph, |edge| *edge.weight()).unwrap(),
+        expected
+    );
+}
+
+#[test]
+#[cfg(feature = "stable_graph")]
+fn johnson_stable_graph_internal_hole() {
+    check_stable_graph(&[1], false);
+}
+
+#[test]
+#[cfg(feature = "stable_graph")]
+fn johnson_stable_graph_leading_hole() {
+    check_stable_graph(&[0], false);
+}
+
+#[test]
+#[cfg(feature = "stable_graph")]
+fn johnson_stable_graph_multiple_holes() {
+    check_stable_graph(&[0, 2, 4], false);
+}
+
+#[test]
+#[cfg(feature = "stable_graph")]
+fn johnson_stable_graph_dense() {
+    check_stable_graph(&[], false);
+}
+
+#[test]
+#[cfg(feature = "stable_graph")]
+fn johnson_stable_graph_refilled_hole() {
+    check_stable_graph(&[1], true);
+}
+
+#[test]
+#[cfg(feature = "stable_graph")]
+fn johnson_stable_graph_trailing_removal() {
+    check_stable_graph(&[5], false);
+}
+
+#[test]
+#[cfg(feature = "stable_graph")]
+fn johnson_stable_graph_empty() {
+    let graph = petgraph::stable_graph::StableDiGraph::<(), i32>::new();
+    assert!(johnson(&graph, |edge| *edge.weight()).unwrap().is_empty());
+    #[cfg(feature = "rayon")]
+    assert!(parallel_johnson(&graph, |edge| *edge.weight())
+        .unwrap()
+        .is_empty());
+}
+
 fn match_results<G, K>(
     res: HashMap<(G::NodeId, G::NodeId), K>,
     expected_res: &HashMap<(G::NodeId, G::NodeId), K>,
