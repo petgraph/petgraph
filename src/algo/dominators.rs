@@ -13,7 +13,7 @@
 //! dominates **C** and **C** dominates **B**.
 
 use alloc::{vec, vec::Vec};
-use core::{cmp::Ordering, hash::Hash};
+use core::{cmp::Ordering, hash::Hash, ops::Range};
 
 use hashbrown::{hash_map::Iter, HashMap, HashSet};
 
@@ -197,9 +197,9 @@ where
         .map(|(idx, &node)| (node, idx))
         .collect();
 
-    // Maps a node's `post_order` index to its set of predecessors's indices
-    // into `post_order` (as a vec).
-    let idx_to_predecessor_vec =
+    // Store predecessor indices contiguously, with one range per node in
+    // `post_order`, instead of allocating a separate vector for each node.
+    let (predecessor_indices, predecessor_ranges) =
         predecessor_sets_to_idx_vecs(&post_order, &node_to_post_order_idx, predecessor_sets);
 
     let mut dominators = vec![UNDEFINED; length];
@@ -219,7 +219,7 @@ where
             // node.
 
             let new_idom_idx = {
-                let mut predecessors = idx_to_predecessor_vec[idx]
+                let mut predecessors = predecessor_indices[predecessor_ranges[idx].clone()]
                     .iter()
                     .filter(|&&p| dominators[p] != UNDEFINED);
                 let new_idom_idx = predecessors.next().expect(
@@ -268,24 +268,26 @@ fn predecessor_sets_to_idx_vecs<N>(
     post_order: &[N],
     node_to_post_order_idx: &HashMap<N, usize>,
     mut predecessor_sets: HashMap<N, HashSet<N>>,
-) -> Vec<Vec<usize>>
+) -> (Vec<usize>, Vec<Range<usize>>)
 where
     N: Copy + Eq + Hash,
 {
-    post_order
-        .iter()
-        .map(|node| {
-            predecessor_sets
-                .remove(node)
-                .map(|predecessors| {
-                    predecessors
-                        .into_iter()
-                        .map(|p| *node_to_post_order_idx.get(&p).unwrap())
-                        .collect()
-                })
-                .unwrap_or_default()
-        })
-        .collect()
+    // Predecessor entries are bounded by edges, not by the number of nodes.
+    let predecessor_count = predecessor_sets.values().map(HashSet::len).sum();
+    let mut indices = Vec::with_capacity(predecessor_count);
+    let mut ranges = Vec::with_capacity(post_order.len());
+    for node in post_order {
+        let start = indices.len();
+        if let Some(predecessors) = predecessor_sets.remove(node) {
+            indices.extend(
+                predecessors
+                    .into_iter()
+                    .map(|p| *node_to_post_order_idx.get(&p).unwrap()),
+            );
+        }
+        ranges.push(start..indices.len());
+    }
+    (indices, ranges)
 }
 
 type PredecessorSets<NodeId> = HashMap<NodeId, HashSet<NodeId>>;
@@ -318,6 +320,28 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn predecessor_ranges_partition_flat_storage() {
+        let post_order = [30, 20, 10];
+        let indices = [(30, 0), (20, 1), (10, 2)].iter().copied().collect();
+        let sets = [
+            (30, [10, 20, 30].iter().copied().collect()),
+            (20, [10, 30].iter().copied().collect()),
+        ]
+        .iter()
+        .cloned()
+        .collect();
+        let (flat, ranges) = predecessor_sets_to_idx_vecs(&post_order, &indices, sets);
+        assert_eq!(ranges, vec![0..3, 3..5, 5..5]);
+        assert_eq!(flat.len(), 5);
+        let mut first = flat[ranges[0].clone()].to_vec();
+        first.sort_unstable();
+        assert_eq!(first, vec![0, 1, 2]);
+        let mut second = flat[ranges[1].clone()].to_vec();
+        second.sort_unstable();
+        assert_eq!(second, vec![0, 2]);
+    }
 
     #[test]
     fn test_iter_dominators() {
