@@ -1151,6 +1151,15 @@ mod tests {
     }
 
     #[test]
+    fn test_find_neg_cycle5() {
+        // The source is on the cycle, and the edge closing it first relaxes in the check pass.
+        let m: Csr<(), _> =
+            Csr::from_sorted_edges(&[(0, 3, -4.), (1, 0, 1.), (2, 1, 1.), (3, 2, 1.)]).unwrap();
+        let result = find_negative_cycle(&m, 3);
+        assert_eq!(result, Some([3, 2, 1, 0].to_vec()));
+    }
+
+    #[test]
     fn test_edge_references() {
         use crate::visit::EdgeRef;
         use crate::visit::IntoEdgeReferences;
