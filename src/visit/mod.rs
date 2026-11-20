@@ -416,6 +416,9 @@ where
     Ix: IndexType,
 {
     fn visit(&mut self, x: Ix) -> bool {
+        if x.index() >= self.len() {
+            self.grow(x.index() + 1);
+        }
         !self.put(x.index())
     }
     fn is_visited(&self, x: &Ix) -> bool {
