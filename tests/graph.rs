@@ -102,6 +102,23 @@ fn dfs() {
 }
 
 #[test]
+fn traversal_after_add_node() {
+    let mut gr = Graph::<(), ()>::new();
+    let a = gr.add_node(());
+    let dfs = Dfs::new(&gr, a);
+    let bfs = Bfs::new(&gr, a);
+    let dfs_post = DfsPostOrder::new(&gr, a);
+    let topo = Topo::new(&gr);
+    let b = gr.add_node(());
+    gr.add_edge(a, b, ());
+
+    assert_eq!(dfs.iter(&gr).collect::<Vec<_>>(), vec![a, b]);
+    assert_eq!(bfs.iter(&gr).collect::<Vec<_>>(), vec![a, b]);
+    assert_eq!(dfs_post.iter(&gr).collect::<Vec<_>>(), vec![b, a]);
+    assert_eq!(topo.iter(&gr).collect::<Vec<_>>(), vec![a, b]);
+}
+
+#[test]
 fn dfs_order() {
     let mut gr = Graph::new();
     let h = gr.add_node("H");
