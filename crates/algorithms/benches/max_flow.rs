@@ -6,7 +6,9 @@ use common::{add_edge, add_nodes};
 use criterion::{
     BenchmarkGroup, Criterion, criterion_group, criterion_main, measurement::WallTime,
 };
-use petgraph_algorithms::flows::max_flow::{dinics_mod::Dinics, edmonds_karp_mod::EdmondsKarp};
+use petgraph_algorithms::flows::max_flow::{
+    dinics_mod::Dinics, edmonds_karp_mod::EdmondsKarp, preflow_push::PreflowPush,
+};
 use petgraph_core::{
     graph::{DirectedGraph, EditableGraph, Graph, storable::StorableGraph},
     utils::test_graphs::directed::DirectedTestGraph,
@@ -125,6 +127,16 @@ where
     group.bench_function("edmonds_karp", |bencher| {
         bencher.iter(|| {
             EdmondsKarp::new_with_capacities(black_box(graph), capacities)
+                .with_source(*source)
+                .with_sink(*sink)
+                .run()
+                .unwrap()
+        });
+    });
+
+    group.bench_function("preflow_push", |bencher| {
+        bencher.iter(|| {
+            PreflowPush::new_with_capacities(black_box(graph), capacities)
                 .with_source(*source)
                 .with_sink(*sink)
                 .run()

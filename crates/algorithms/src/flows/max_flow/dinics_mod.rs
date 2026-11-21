@@ -10,14 +10,11 @@ use petgraph_core::{
     },
 };
 
-use super::{other_endpoint, residual_capacity};
+use super::{FlowEdge, other_endpoint, residual_capacity};
 use crate::{
     flows::max_flow::{MaxFlowConfigError, MaxFlowOutput, adjusted_residual_flow},
     traits::{Bounded, Measure, MinMax, NonNegative, Zero},
 };
-
-/// Edge with its capacity copied out of the graph.
-type FlowEdge<G, C> = Edge<<G as Graph>::EdgeId, C, <G as Graph>::NodeId>;
 
 /// Struct to run Dinic's algorithm.
 ///

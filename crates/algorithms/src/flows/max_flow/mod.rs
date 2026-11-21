@@ -3,10 +3,11 @@
 //! Using the `max_flow` function will select an algorithm. The algorithm(s) it uses
 //! are subject to change in the future.
 //!
-//! Currently, `petgraph-algorithms` provides two algorithms to compute the maximum flow
+//! Currently, `petgraph-algorithms` provides three algorithms to compute the maximum flow
 //! in a flow network:
 //! - [Dinic's Algorithm](dinics_mod::Dinics) [(Wikipedia)][dinics_wikipedia]
 //! - [Edmonds-Karp Algorithm](edmonds_karp_mod::EdmondsKarp) [(Wikipedia)][edmonds_karp_wikipedia]
+//! - [Preflow-Push Algorithm](preflow_push::PreflowPush) [(Wikipedia)][preflow_push_wikipedia]
 //!
 //! They can be found in their respective submodules.
 //!
@@ -16,16 +17,21 @@
 //! unit capacities, and bipartite graphs.
 //! Edmonds-Karp may be a better choice when working with small or
 //! sparse graphs.
+//! Preflow-Push does not search for augmenting paths, but pushes flow between neighboring nodes.
+//! It is usually the fastest of the three, but can be slower if the edges leaving the source have
+//! far more capacity than can reach the sink, as the excess flow has to be pushed back.
 //!
 //! For more information about each algorithm and their detailed time
 //! complexity, check their respective documentation.
 //!
 //! [dinics_wikipedia]: https://en.wikipedia.org/wiki/Dinic%27s_algorithm
 //! [edmonds_karp_wikipedia]: https://en.wikipedia.org/wiki/Edmonds%E2%80%93Karp_algorithm
+//! [preflow_push_wikipedia]: https://en.wikipedia.org/wiki/Push%E2%80%93relabel_maximum_flow_algorithm
 //! [max_flow_wikipedia]: https://en.wikipedia.org/wiki/Maximum_flow_problem
 
 pub mod dinics_mod;
 pub mod edmonds_karp_mod;
+pub mod preflow_push;
 
 use core::{
     error::Error,
@@ -41,6 +47,9 @@ use petgraph_core::{
 use crate::traits::NonNegative;
 #[cfg(feature = "alloc")]
 use crate::traits::{Bounded, Measure, MinMax, Zero};
+
+/// Edge with its capacity copied out of the graph.
+type FlowEdge<G, C> = Edge<<G as Graph>::EdgeId, C, <G as Graph>::NodeId>;
 
 /// Errors that can occur in the configuration of max flow algorithms.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -262,17 +271,19 @@ where
     }
 }
 
-/// Gets the other endpoint of graph edge, if any, otherwise panics.
+/// Gets the other endpoint of graph edge, given that `vertex` is one of its endpoints.
 fn other_endpoint<G, D>(edge: &Edge<G::EdgeId, D, G::NodeId>, vertex: G::NodeId) -> G::NodeId
 where
     G: DirectedGraph,
 {
+    debug_assert!(
+        vertex == edge.source || vertex == edge.target,
+        "Illegal endpoint {vertex}"
+    );
     if vertex == edge.source {
         edge.target
-    } else if vertex == edge.target {
-        edge.source
     } else {
-        panic!("Illegal endpoint {vertex}");
+        edge.source
     }
 }
 

@@ -7,6 +7,7 @@ use core::{
 use petgraph_algorithms::{
     flows::max_flow::{
         MaxFlow, MaxFlowConfigError, dinics_mod::Dinics, edmonds_karp_mod::EdmondsKarp,
+        preflow_push::PreflowPush,
     },
     traits::{Bounded, MinMax, NonNegative, Zero},
 };
@@ -39,6 +40,19 @@ macro_rules! test_max_flow_on_graph {
             use super::*;
             test_max_flow_all_examples!($graph_constructor, |graph, source, sink| {
                 Dinics::new_with_capacities(graph, |edge_id| {
+                    graph.edge(edge_id).unwrap().data.clone()
+                })
+                .with_source(source)
+                .with_sink(sink)
+                .run()
+                .unwrap()
+                .into_max_flow_and_flow_data()
+            });
+        }
+        mod preflow_push {
+            use super::*;
+            test_max_flow_all_examples!($graph_constructor, |graph, source, sink| {
+                PreflowPush::new_with_capacities(graph, |edge_id| {
                     graph.edge(edge_id).unwrap().data.clone()
                 })
                 .with_source(source)
@@ -150,6 +164,12 @@ fn test_max_flow_no_source_or_sink() {
         Err(MaxFlowConfigError::SourceNodeNotSet)
     ));
 
+    let preflow_push_result = PreflowPush::new(&graph).with_sink(node2).run();
+    assert!(matches!(
+        preflow_push_result,
+        Err(MaxFlowConfigError::SourceNodeNotSet)
+    ));
+
     let max_flow_result = MaxFlow::new(&graph).with_sink(node2).run();
     assert!(matches!(
         max_flow_result,
@@ -165,6 +185,12 @@ fn test_max_flow_no_source_or_sink() {
     let dinics_result = Dinics::new(&graph).with_source(node2).run();
     assert!(matches!(
         dinics_result,
+        Err(MaxFlowConfigError::SinkNodeNotSet)
+    ));
+
+    let preflow_push_result = PreflowPush::new(&graph).with_source(node2).run();
+    assert!(matches!(
+        preflow_push_result,
         Err(MaxFlowConfigError::SinkNodeNotSet)
     ));
 
